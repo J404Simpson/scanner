@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   const videoElement = document.getElementById('video');
   const output = document.getElementById('output');
+  const scanningView = document.getElementById('scanningView');
+  const tableView = document.getElementById('tableView');
+  const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
+  const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
   const scanTableBody = document.querySelector('#scanTable tbody');
-  const verifyAccountBtn = document.getElementById('verifyAccountBtn');
 
   const hints = new Map();
   const formats = [
@@ -22,11 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastScannedCode = null;
   let confirmedAccount = null;
   let confirmedAccountName = null;
+  let scanCooldown = false;
 
-
-  startBtn.disabled = true;
-  scanNextBtn.classList.add('invisible');
-
+  updateViewState();
 
   async function verifyAccountNumber() {
     const input = document.getElementById('accountInput');
@@ -51,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         status.innerHTML = `✅ Found: ${data.name}<br/>Is this correct? <button id="confirmAccountBtn">Yes</button> <button id="rejectAccountBtn">No</button>`;
         status.style.color = 'green';
 
-        startBtn.disabled = true;
+        updateViewState();
 
         // Set up confirmation buttons
         setTimeout(() => {
@@ -68,11 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show the table view (default state after confirmation)
             document.getElementById('tableView').classList.remove('hidden');
 
-            // Enable start button
-            startBtn.disabled = false;
-
             // Set confirmed message somewhere if desired
             output.textContent = `✅ Confirmed: ${data.name}`;
+
+            updateViewState();
           });
 
           rejectBtn?.addEventListener('click', () => {
@@ -81,14 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
             status.textContent = '⚠️ Please enter the correct account number.';
             status.style.color = 'darkorange';
             input.value = '';
-            startBtn.disabled = true;
+            updateViewState();
           });
         }, 0);
 
       } else {
         status.textContent = '❌ Account not found.';
         status.style.color = 'red';
-        startBtn.disabled = true;
       }
 
     } catch (err) {
@@ -97,6 +96,28 @@ document.addEventListener('DOMContentLoaded', () => {
       status.style.color = 'red';
     }
   }
+
+  function updateViewState() {
+    const scannedSection = document.getElementById('scannedSection');
+    const hasScans = scannedCodes.length > 0;
+
+    // Show Start button only if no scans exist and account is confirmed
+    startBtn.classList.toggle('hidden', hasScans || !confirmedAccount);
+    startBtn.disabled = !confirmedAccount;
+
+    // Show Scan Next only if there are scans
+    scanNextBtn.classList.toggle('invisible', !hasScans);
+    scanNextBtn.disabled = !hasScans;
+
+    // Enable Submit only if there are scans
+    submitBtn.disabled = !hasScans;
+
+    // Show/hide scanned table
+    scannedSection.classList.toggle('hidden', !hasScans);
+  }
+
+
+
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
@@ -129,22 +150,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-
   function startScan() {
     codeReader.reset();
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
-    submitBtn.disabled = false;
+    lastScannedCode = null;
+
 
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
-      if (result) {
+      if (result && !scanCooldown) {
+        scanCooldown = true;
+        setTimeout(() => (scanCooldown = false), 1000); // 1 second lockout
+
+        let code = result.getText().replace(/[\x00-\x1F]/g, '');
         const format = result.getBarcodeFormat();
-        let code = result.getText();
 
-        // ✅ Clean control characters (like FNC1, ASCII 29)
-        code = code.replace(/[\x00-\x1F]/g, '');
-
-        // ✅ Reject invalid or non-GS1 CODE_128 codes
         if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
           output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
           codeReader.reset();
@@ -154,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lastScannedCode = code;
 
-        // ✅ Deduplication check
         const existing = scannedCodes.find(entry => entry.code === code);
         if (existing) {
           existing.count++;
@@ -165,32 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
           scannedCodes.push(entry);
           addToTable(scannedCodes.length, entry);
           output.textContent = '✅ New QR code added.';
-          
-          // Show scanned section if it's the first scan
-          if (scannedCodes.length === 1) {
-            document.getElementById('scannedSection').classList.remove('hidden');
-          }
         }
 
-        codeReader.reset();
-
-        // ✅ View switch: hide scanning view, show table view
         scanningView.classList.add('hidden');
         tableView.classList.remove('hidden');
-
-        if (scanNextBtn.classList.contains("invisible")) {
-          scanNextBtn.classList.remove("invisible");
-        }
-        scanNextBtn.disabled = false;
-
+        updateViewState();
       } else if (err && !(err instanceof ZXing.NotFoundException)) {
         output.textContent = '⚠️ Scan error.';
         console.error('Scan error:', err);
-        codeReader.reset();
-        if (scanNextBtn.classList.contains("invisible")) {
-          scanNextBtn.classList.remove("invisible");
-        }
-        scanNextBtn.disabled = false;
+        updateViewState();
       }
     });
   }
@@ -206,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
     row.dataset.code = entry.code;
     row.innerHTML = `
       <td data-label="#">${index}</td>
-      <td data-label="Code">${parsed.code || ''}</td>
       <td data-label="Device Id">${parsed.device || ''}</td>
       <td data-label="Production Date">${parsed.produced || ''}</td>
       <td data-label="Expiry Date">${parsed.expiry || ''}</td>
@@ -229,12 +230,18 @@ document.addEventListener('DOMContentLoaded', () => {
           scannedCodes.splice(index, 1);
           row.remove();
           output.textContent = `🗑️ Removed code from list`;
+
+          // Clear last scanned code if applicable
+          if (lastScannedCode === code) {
+            lastScannedCode = null;
+          }
         }
 
-        // Re-disable global buttons if nothing left
+        // Check for empty list
         if (scannedCodes.length === 0) {
-          submitBtn.disabled = true;
+          lastScannedCode = null;
         }
+        updateViewState();
       }
     });
 
@@ -321,23 +328,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateCount(code, count) {
     const row = scanTableBody.querySelector(`tr[data-code="${code}"]`);
     if (row) {
-      row.querySelector('.count').textContent = count;
+      const countCell = row.querySelector('.count');
+      if (countCell) countCell.textContent = count;
     }
   }
 
   scanNextBtn.addEventListener('click', () => startScan());
 
   cancelScanBtn.addEventListener('click', () => {
-    // Stop the camera
     codeReader.reset();
-
-    // Hide scanning view
-    document.getElementById('scanningView').classList.add('hidden');
-
-    // Show table view again
-    document.getElementById('tableView').classList.remove('hidden');
-
+    scanningView.classList.add('hidden');
+    tableView.classList.remove('hidden');
     output.textContent = '✅ Scan cancelled.';
+    scanCooldown = false;
+    updateViewState();
   });
 
 
