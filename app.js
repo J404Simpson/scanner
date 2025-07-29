@@ -62,8 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
           confirmBtn?.addEventListener('click', () => {
             confirmedAccount = accountNumber;
             confirmedAccountName = data.name;
-            status.textContent = `✅ Confirmed: ${data.name}`;
-            startBtn.disabled = false;
+
+            // Hide account input section
+            document.getElementById('accountSection').style.display = 'none';
+
+            // Show scan section
+            document.getElementById('scanSection').style.display = 'block';
+
+            // Set confirmed message somewhere if desired
+            output.textContent = `✅ Confirmed: ${data.name}`;
           });
 
           rejectBtn?.addEventListener('click', () => {
