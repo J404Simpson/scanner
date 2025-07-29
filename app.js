@@ -67,10 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Hide account input section
             document.getElementById('accountSection').classList.add('hidden');
 
-            // Show scan section
-            document.getElementById('scanSection').classList.remove('hidden');
+            // Show the table view (default state after confirmation)
+            document.getElementById('tableView').classList.remove('hidden');
 
-            // Enable Start Scanning button
+            // Enable start button
             startBtn.disabled = false;
 
             // Set confirmed message somewhere if desired
@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
   startBtn.addEventListener('click', () => {
@@ -109,17 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Proceed with scan
-    startBtn.classList.add("hidden");
-    output.textContent = '📷 Initializing camera...';
-    videoElement.classList.remove("hidden");
+    // Hide the table view
+    document.getElementById('tableView').classList.add('hidden');
 
+    // Show the scanning view
+    document.getElementById('scanningView').classList.remove('hidden');
+
+    // Update status
+    output.textContent = '📷 Initializing camera...';
+
+    // Start scanning
     codeReader.listVideoInputDevices().then(devices => {
       if (devices.length === 0) {
         output.textContent = '❌ No camera found.';
         return;
       }
-
       currentDeviceId = devices[0].deviceId;
       startScan();
     }).catch(err => {
@@ -127,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(err);
     });
   });
+
 
   function startScan() {
     codeReader.reset();
@@ -172,6 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         codeReader.reset();
+
+        // ✅ View switch: hide scanning view, show table view
+        scanningView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+
         if (scanNextBtn.classList.contains("invisible")) {
           scanNextBtn.classList.remove("invisible");
         }
@@ -347,6 +356,20 @@ document.addEventListener('DOMContentLoaded', () => {
       lastScannedCode = null;
     }
   });
+
+  cancelScanBtn.addEventListener('click', () => {
+    // Stop the camera
+    codeReader.reset();
+
+    // Hide scanning view
+    document.getElementById('scanningView').classList.add('hidden');
+
+    // Show table view again
+    document.getElementById('tableView').classList.remove('hidden');
+
+    output.textContent = '✅ Scan cancelled.';
+  });
+
 
   submitBtn.addEventListener('click', () => {
     if (scannedCodes.length === 0) {
