@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show scan section
             document.getElementById('scanSection').style.display = 'block';
 
+            // Enable Start Scanning button
+            startBtn.disabled = false;
+
             // Set confirmed message somewhere if desired
             output.textContent = `✅ Confirmed: ${data.name}`;
           });
