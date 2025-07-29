@@ -173,6 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
           scannedCodes.push(entry);
           addToTable(scannedCodes.length, entry);
           output.textContent = '✅ New QR code added.';
+          // Show scanned section if it's the first scan
+          if (scannedCodes.length === 1) {
+            document.getElementById('scannedSection').classList.remove('hidden');
+          }
         }
 
         codeReader.reset();
