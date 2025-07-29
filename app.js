@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const scannedCodes = [];
   let currentDeviceId = null;
   let lastScannedCode = null;
+  let confirmedAccount = null;
+  let confirmedAccountName = null;
+
 
   startBtn.disabled = true;
   scanNextBtn.style.visibility = "hidden";
@@ -46,14 +49,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (data && data.name) {
-        status.textContent = `✅ Found: ${data.name}`;
+        status.innerHTML = `✅ Found: ${data.name}<br/>Is this correct? <button id="confirmAccountBtn">Yes</button> <button id="rejectAccountBtn">No</button>`;
         status.style.color = 'green';
-        startBtn.disabled = false;
+
+        startBtn.disabled = true;
+
+        // Set up confirmation buttons
+        setTimeout(() => {
+          const confirmBtn = document.getElementById('confirmAccountBtn');
+          const rejectBtn = document.getElementById('rejectAccountBtn');
+
+          confirmBtn?.addEventListener('click', () => {
+            confirmedAccount = accountNumber;
+            confirmedAccountName = data.name;
+            status.textContent = `✅ Confirmed: ${data.name}`;
+            startBtn.disabled = false;
+          });
+
+          rejectBtn?.addEventListener('click', () => {
+            confirmedAccount = null;
+            confirmedAccountName = null;
+            status.textContent = '⚠️ Please enter the correct account number.';
+            status.style.color = 'darkorange';
+            input.value = '';
+            startBtn.disabled = true;
+          });
+        }, 0);
+
       } else {
         status.textContent = '❌ Account not found.';
         status.style.color = 'red';
         startBtn.disabled = true;
       }
+
     } catch (err) {
       console.error('Account lookup failed:', err);
       status.textContent = '❌ Error contacting server.';
@@ -61,9 +89,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
   startBtn.addEventListener('click', () => {
+    if (!confirmedAccount) {
+      output.textContent = '⚠️ Please confirm the account before scanning.';
+      return;
+    }
+
+    // Proceed with scan
     startBtn.style.display = "none";
     output.textContent = '📷 Initializing camera...';
     videoElement.style.display = 'block';
@@ -308,9 +343,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (!confirmedAccount) {
+      output.textContent = '⚠️ No account confirmed.';
+      return;
+    }
+
     output.textContent = '🚀 Submitting scanned codes...';
 
-    console.log({ codes: scannedCodes })
+    const payload = {
+      account: confirmedAccount,
+      accountName: confirmedAccountName,
+      codes: scannedCodes
+    };
+
+    console.log(payload);
 
     // 🔁 Replace this with your real API URL
     // fetch('https://your-api.com/submit', {
