@@ -151,6 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function startScan() {
+    scanningView.classList.remove('hidden');
+    tableView.classList.add('hidden');
+
     codeReader.reset();
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
