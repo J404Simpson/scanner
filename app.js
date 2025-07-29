@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const output = document.getElementById('output');
   const startBtn = document.getElementById('startBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
-  const removeLastBtn = document.getElementById('removeLastBtn');
   const submitBtn = document.getElementById('submitBtn');
   const scanTableBody = document.querySelector('#scanTable tbody');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
@@ -27,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startBtn.disabled = true;
   scanNextBtn.classList.add('invisible');
-  removeLastBtn.classList.add('invisible');
 
 
   async function verifyAccountNumber() {
@@ -136,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
-    removeLastBtn.classList.add('invisible');
     submitBtn.disabled = false;
 
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
@@ -157,11 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lastScannedCode = code;
 
-        if (removeLastBtn.classList.contains("invisible")) {
-          removeLastBtn.classList.remove("invisible");
-        }
-        if (removeLastBtn) removeLastBtn.disabled = false;
-
         // ✅ Deduplication check
         const existing = scannedCodes.find(entry => entry.code === code);
         if (existing) {
@@ -173,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
           scannedCodes.push(entry);
           addToTable(scannedCodes.length, entry);
           output.textContent = '✅ New QR code added.';
+          
           // Show scanned section if it's the first scan
           if (scannedCodes.length === 1) {
             document.getElementById('scannedSection').classList.remove('hidden');
@@ -240,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Re-disable global buttons if nothing left
         if (scannedCodes.length === 0) {
-          removeLastBtn.disabled = true;
           submitBtn.disabled = true;
         }
       }
@@ -334,32 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   scanNextBtn.addEventListener('click', () => startScan());
-  removeLastBtn.addEventListener('click', () => {
-
-    removeLastBtn.classList.add("invisible");
-
-    if (!lastScannedCode) return;
-
-    const index = scannedCodes.findIndex(entry => entry.code === lastScannedCode);
-    if (index !== -1) {
-      const entry = scannedCodes[index];
-      if (entry.count > 1) {
-        entry.count--;
-        updateCount(entry.code, entry.count);
-        output.textContent = `↩️ Decremented count (${entry.count} left)`;
-      } else {
-        scannedCodes.splice(index, 1);
-        scanTableBody.querySelector(`tr[data-code="${entry.code}"]`).remove();
-        output.textContent = '🗑️ Removed last scanned code';
-      }
-
-      if (scannedCodes.length === 0) {
-        if (removeLastBtn) removeLastBtn.disabled = true;
-        if (submitBtn) submitBtn.disabled = true;
-      }
-      lastScannedCode = null;
-    }
-  });
 
   cancelScanBtn.addEventListener('click', () => {
     // Stop the camera
