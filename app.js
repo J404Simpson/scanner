@@ -26,8 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   startBtn.disabled = true;
-  scanNextBtn.style.visibility = "hidden";
-  removeLastBtn.style.visibility = "hidden";
+  scanNextBtn.classList.add('invisible');
+  removeLastBtn.classList.add('invisible');
+
 
   async function verifyAccountNumber() {
     const input = document.getElementById('accountInput');
@@ -64,10 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmedAccountName = data.name;
 
             // Hide account input section
-            document.getElementById('accountSection').style.display = 'none';
+            document.getElementById('accountSection').classList.add('hidden');
 
             // Show scan section
-            document.getElementById('scanSection').style.display = 'block';
+            document.getElementById('scanSection').classList.remove('hidden');
 
             // Enable Start Scanning button
             startBtn.disabled = false;
@@ -109,9 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Proceed with scan
-    startBtn.style.display = "none";
+    startBtn.classList.add("hidden");
     output.textContent = '📷 Initializing camera...';
-    videoElement.style.display = 'block';
+    videoElement.classList.remove("hidden");
 
     codeReader.listVideoInputDevices().then(devices => {
       if (devices.length === 0) {
@@ -131,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
-    removeLastBtn.style.visibility = "hidden";
+    removeLastBtn.classList.add('invisible');
     submitBtn.disabled = false;
 
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
@@ -152,8 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lastScannedCode = code;
 
-        if (removeLastBtn.style.visibility === "hidden") {
-          removeLastBtn.style.visibility = "visible";
+        if (removeLastBtn.classList.contains("invisible")) {
+          removeLastBtn.classList.remove("invisible");
         }
         if (removeLastBtn) removeLastBtn.disabled = false;
 
@@ -171,8 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         codeReader.reset();
-        if (scanNextBtn.style.visibility === "hidden") {
-          scanNextBtn.style.visibility = "visible";
+        if (scanNextBtn.classList.contains("invisible")) {
+          scanNextBtn.classList.remove("invisible");
         }
         scanNextBtn.disabled = false;
 
@@ -180,8 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         output.textContent = '⚠️ Scan error.';
         console.error('Scan error:', err);
         codeReader.reset();
-        if (scanNextBtn.style.visibility === "hidden") {
-          scanNextBtn.style.visibility = "visible";
+        if (scanNextBtn.classList.contains("invisible")) {
+          scanNextBtn.classList.remove("invisible");
         }
         scanNextBtn.disabled = false;
       }
@@ -198,14 +199,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     row.dataset.code = entry.code;
     row.innerHTML = `
-      <td>${index}</td>
-      <td>${parsed.code || ''}</td>
-      <td>${parsed.device || ''}</td>
-      <td>${parsed.produced || ''}</td>
-      <td>${parsed.expiry || ''}</td>
-      <td>${parsed.lot || ''}</td>
-      <td class="count">${entry.count}</td>
-      <td><button class="inline-remove">Remove</button></td>
+      <td data-label="#">${index}</td>
+      <td data-label="Code">${parsed.code || ''}</td>
+      <td data-label="Device Id">${parsed.device || ''}</td>
+      <td data-label="Production Date">${parsed.produced || ''}</td>
+      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
+      <td data-label="Lot Number">${parsed.lot || ''}</td>
+      <td data-label="Count" class="count">${entry.count}</td>
+      <td data-label="Action"><button class="inline-remove">Remove</button></td>
     `;
 
     // Add event listener to the inline remove button
@@ -322,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
   scanNextBtn.addEventListener('click', () => startScan());
   removeLastBtn.addEventListener('click', () => {
 
-    removeLastBtn.style.visibility = "hidden";
+    removeLastBtn.classList.add("invisible");
 
     if (!lastScannedCode) return;
 
