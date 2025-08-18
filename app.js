@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     status.style.color = 'black';
 
     try {
-      const res = await fetch(`http://localhost:3000/api/account?number=${encodeURIComponent(accountNumber)}`);
+      const res = await fetch(`https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
