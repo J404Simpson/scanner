@@ -35,65 +35,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const accountNumber = input.value.trim();
 
     if (!accountNumber) {
-      status.textContent = '⚠️ Please enter an account number.';
-      status.style.color = 'darkorange';
-      return;
+        status.textContent = '⚠️ Please enter an account number.';
+        status.style.color = 'darkorange';
+        return;
     }
 
     status.textContent = '🔍 Looking up account...';
     status.style.color = 'black';
 
     try {
-      const res = await fetch(`https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+        const res = await fetch(
+            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
+        );
 
-      if (data && data.name) {
-        status.innerHTML = `✅ Found: ${data.name}<br/>Is this correct? <button id="confirmAccountBtn">Yes</button> <button id="rejectAccountBtn">No</button>`;
+        // ✅ Handle API errors before parsing JSON
+        if (res.status === 404) {
+            status.textContent = '❌ Account not found or missing required information.';
+            status.style.color = 'red';
+            return;
+        }
+
+        if (res.status === 422) {
+            status.textContent = '⚠️ Account exists but warehouse code is missing. Please contact support.';
+            status.style.color = 'darkorange';
+            return;
+        }
+
+        if (!res.ok) {
+            status.textContent = '❌ Server error. Please try again later.';
+            status.style.color = 'red';
+            return;
+        }
+
+        // ✅ At this point, both name and warehouseCode are guaranteed
+        const data = await res.json();
+
+        status.innerHTML = `
+            ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>Is this correct? 
+            <button id="confirmAccountBtn">Yes</button> 
+            <button id="rejectAccountBtn">No</button>
+        `;
         status.style.color = 'green';
 
         updateViewState();
 
-        // Set up confirmation buttons
+        // ✅ Setup confirmation buttons
         setTimeout(() => {
-          const confirmBtn = document.getElementById('confirmAccountBtn');
-          const rejectBtn = document.getElementById('rejectAccountBtn');
+            const confirmBtn = document.getElementById('confirmAccountBtn');
+            const rejectBtn = document.getElementById('rejectAccountBtn');
 
-          confirmBtn?.addEventListener('click', () => {
-            confirmedAccount = accountNumber;
-            confirmedAccountName = data.name;
+            confirmBtn?.addEventListener('click', () => {
+                confirmedAccount = accountNumber;
+                confirmedAccountName = data.name;
+                confirmedWarehouseCode = data.warehouseCode;
 
-            // Hide account input section
-            document.getElementById('accountSection').classList.add('hidden');
+                // Hide input section
+                document.getElementById('accountSection').classList.add('hidden');
 
-            // Show the table view (default state after confirmation)
-            document.getElementById('tableView').classList.remove('hidden');
+                // Show table view
+                document.getElementById('tableView').classList.remove('hidden');
 
-            // Set confirmed message somewhere if desired
-            output.textContent = `✅ Confirmed: ${data.name}`;
+                // Show confirmation message
+                output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
 
-            updateViewState();
-          });
+                updateViewState();
+            });
 
-          rejectBtn?.addEventListener('click', () => {
-            confirmedAccount = null;
-            confirmedAccountName = null;
-            status.textContent = '⚠️ Please enter the correct account number.';
-            status.style.color = 'darkorange';
-            input.value = '';
-            updateViewState();
-          });
+            rejectBtn?.addEventListener('click', () => {
+                confirmedAccount = null;
+                confirmedAccountName = null;
+                confirmedWarehouseCode = null;
+                status.textContent = '⚠️ Please enter the correct account number.';
+                status.style.color = 'darkorange';
+                input.value = '';
+                updateViewState();
+            });
         }, 0);
 
-      } else {
-        status.textContent = '❌ Account not found.';
-        status.style.color = 'red';
-      }
-
     } catch (err) {
-      console.error('Account lookup failed:', err);
-      status.textContent = '❌ Error contacting server.';
-      status.style.color = 'red';
+        console.error('Account lookup failed:', err);
+        status.textContent = '❌ Network or server error.';
+        status.style.color = 'red';
     }
   }
 
@@ -115,9 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show/hide scanned table
     scannedSection.classList.toggle('hidden', !hasScans);
   }
-
-
-
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
