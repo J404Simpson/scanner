@@ -196,12 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startScan() {
     if (!currentDeviceId) {
-      output.textContent = '❌ No camera selected.';
-      return;
+        output.textContent = '❌ No camera selected.';
+        console.warn('startScan aborted: currentDeviceId is null');
+        return;
     }
 
     scanningView.classList.remove('hidden');
     tableView.classList.add('hidden');
+
+    videoElement.autoplay = true;
+    videoElement.playsInline = true;
+    videoElement.muted = true;
 
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
@@ -209,18 +214,13 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     lastScannedCode = null;
 
-    // Ensure video element settings
-    videoElement.autoplay = true;
-    videoElement.playsInline = true;
-    videoElement.srcObject = null;
-
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
-      if (result && !scanCooldown) {
-        scanCooldown = true;
-        setTimeout(() => (scanCooldown = false), 1000);
+        if (result && !scanCooldown) {
+            scanCooldown = true;
+            setTimeout(() => (scanCooldown = false), 1000);
 
-        let code = result.getText().replace(/[\x00-\x1F]/g, '');
-        const format = result.getBarcodeFormat();
+            let code = result.getText().replace(/[\x00-\x1F]/g, '');
+            const format = result.getBarcodeFormat();
 
         if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
           output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
@@ -259,25 +259,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startBtn.addEventListener('click', async () => {
     if (!confirmedAccount) {
-      output.textContent = '⚠️ Please confirm the account before scanning.';
-      return;
+        output.textContent = '⚠️ Please confirm the account before scanning.';
+        return;
     }
 
     document.getElementById('tableView').classList.add('hidden');
     document.getElementById('scanningView').classList.remove('hidden');
     output.textContent = '📷 Initializing camera...';
 
-    try {
-      currentDeviceId = await selectBackCamera();
-      if (!currentDeviceId) {
+    currentDeviceId = await selectBackCamera();
+    if (!currentDeviceId) {
         output.textContent = '❌ No camera found.';
         return;
-      }
-      startScan();
-    } catch (err) {
-      output.textContent = `❌ Camera error: ${err.message || err}`;
-      console.error(err);
     }
+
+    startScan(); // no await
   });
 
   cancelScanBtn.addEventListener('click', () => {
