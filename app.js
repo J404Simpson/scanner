@@ -21,11 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
   const scannedCodes = [];
+
   let currentDeviceId = null;
   let lastScannedCode = null;
   let confirmedAccount = null;
   let confirmedAccountName = null;
   let scanCooldown = false;
+  let consignmentItems = [];
 
   updateViewState();
 
@@ -48,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
         );
 
-        // ✅ Handle API errors before parsing JSON
         if (res.status === 404) {
             status.textContent = '❌ Account not found or missing required information.';
             status.style.color = 'red';
@@ -67,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ✅ At this point, both name and warehouseCode are guaranteed
         const data = await res.json();
 
         status.innerHTML = `
@@ -79,20 +79,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateViewState();
 
-        // ✅ Setup confirmation buttons
         setTimeout(() => {
             const confirmBtn = document.getElementById('confirmAccountBtn');
             const rejectBtn = document.getElementById('rejectAccountBtn');
 
-            confirmBtn?.addEventListener('click', () => {
+            confirmBtn?.addEventListener('click', async () => {
                 confirmedAccount = accountNumber;
                 confirmedAccountName = data.name;
                 confirmedWarehouseCode = data.warehouseCode;
 
+                // 🔹 Fetch items silently in the background
+                await fetchConsignmentItems(data.warehouseCode);
+
                 // Hide input section
                 document.getElementById('accountSection').classList.add('hidden');
 
-                // Show table view
+                // Show table view (or any next step in your app)
                 document.getElementById('tableView').classList.remove('hidden');
 
                 // Show confirmation message
@@ -119,6 +121,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function fetchConsignmentItems(warehouseCode) {
+    try {
+        const res = await fetch(
+            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
+        );
+
+        if (!res.ok) {
+            console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
+            consignmentItems = [];
+            return;
+        }
+
+        const data = await res.json();
+        consignmentItems = data.items || [];
+        console.log(`📦 Loaded ${consignmentItems.length} consignment items for warehouse ${warehouseCode}`);
+    } catch (err) {
+        console.error('❌ Failed to fetch consignment items:', err);
+        consignmentItems = [];
+    }
+  }
+
   function updateViewState() {
     const scannedSection = document.getElementById('scannedSection');
     const hasScans = scannedCodes.length > 0;
@@ -137,37 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show/hide scanned table
     scannedSection.classList.toggle('hidden', !hasScans);
   }
-
-  verifyAccountBtn.addEventListener('click', verifyAccountNumber);
-
-  startBtn.addEventListener('click', () => {
-    if (!confirmedAccount) {
-      output.textContent = '⚠️ Please confirm the account before scanning.';
-      return;
-    }
-
-    // Hide the table view
-    document.getElementById('tableView').classList.add('hidden');
-
-    // Show the scanning view
-    document.getElementById('scanningView').classList.remove('hidden');
-
-    // Update status
-    output.textContent = '📷 Initializing camera...';
-
-    // Start scanning
-    codeReader.listVideoInputDevices().then(devices => {
-      if (devices.length === 0) {
-        output.textContent = '❌ No camera found.';
-        return;
-      }
-      currentDeviceId = devices[0].deviceId;
-      startScan();
-    }).catch(err => {
-      output.textContent = `❌ Camera error: ${err.message || err}`;
-      console.error(err);
-    });
-  });
 
   function startScan() {
     scanningView.classList.remove('hidden');
@@ -218,56 +210,71 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
+  
   function addToTable(index, entry) {
-    const row = document.createElement('tr');
     const parsed = isLikelyGS1(entry.code)
       ? parseGS1(entry.code, entry.format)
-      : { code: entry.code }; // fallback — don't try parsing non-GS1
+      : { code: entry.code }; // fallback for non-GS1
 
-    // const parsed = parseGS1(entry.code, entry.format);
+    const scannedLot = parsed.lot || '';
 
+    // ✅ Find matching consignment item
+    const matchedItem = consignmentItems.find(item => 
+        item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim() === scannedLot.trim()
+    );
+
+    // Calculate variance (0 if no match)
+    const consignmentQty = matchedItem ? matchedItem.cr5bd_quantity : 0;
+    const variance = entry.count - consignmentQty;
+
+    const row = document.createElement('tr');
     row.dataset.code = entry.code;
+
     row.innerHTML = `
       <td data-label="#">${index}</td>
       <td data-label="Device Id">${parsed.device || ''}</td>
       <td data-label="Production Date">${parsed.produced || ''}</td>
       <td data-label="Expiry Date">${parsed.expiry || ''}</td>
-      <td data-label="Lot Number">${parsed.lot || ''}</td>
+      <td data-label="Lot Number">${scannedLot}</td>
       <td data-label="Count" class="count">${entry.count}</td>
+      <td data-label="Variance" class="variance">${variance}</td>
       <td data-label="Action"><button class="inline-remove">Remove</button></td>
     `;
 
-    // Add event listener to the inline remove button
+    // ✅ Inline remove button
     row.querySelector('.inline-remove').addEventListener('click', () => {
-      const code = entry.code;
-      const index = scannedCodes.findIndex(e => e.code === code);
-      if (index !== -1) {
-        const item = scannedCodes[index];
-        if (item.count > 1) {
-          item.count--;
-          updateCount(code, item.count);
-          output.textContent = `↩️ Decremented count (${item.count} left)`;
-        } else {
-          scannedCodes.splice(index, 1);
-          row.remove();
-          output.textContent = `🗑️ Removed code from list`;
+        const code = entry.code;
+        const idx = scannedCodes.findIndex(e => e.code === code);
 
-          // Clear last scanned code if applicable
-          if (lastScannedCode === code) {
-            lastScannedCode = null;
-          }
-        }
+        if (idx !== -1) {
+            const item = scannedCodes[idx];
+            if (item.count > 1) {
+                item.count--;
+                updateCount(code, item.count);
 
-        // Check for empty list
-        if (scannedCodes.length === 0) {
-          lastScannedCode = null;
+                // Update variance column dynamically
+                const varianceCell = row.querySelector('.variance');
+                varianceCell.textContent = item.count - consignmentQty;
+
+                output.textContent = `↩️ Decremented count (${item.count} left)`;
+            } else {
+                scannedCodes.splice(idx, 1);
+                row.remove();
+                output.textContent = `🗑️ Removed code from list`;
+
+                if (lastScannedCode === code) lastScannedCode = null;
+            }
+
+            if (scannedCodes.length === 0) lastScannedCode = null;
+            updateViewState();
         }
-        updateViewState();
-      }
     });
 
-    scanTableBody.appendChild(row);  
+    scanTableBody.appendChild(row);
+
+    // ✅ Feedback
+    output.textContent = `✅ Added item with Lot #${scannedLot} (Variance: ${variance})`;
+    output.style.color = variance === 0 ? 'green' : 'orange';
   }
 
   function parseGS1(code, format) {
@@ -355,7 +362,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  scanNextBtn.addEventListener('click', () => startScan());
+  verifyAccountBtn.addEventListener('click', verifyAccountNumber);
+
+  startBtn.addEventListener('click', () => {
+    if (!confirmedAccount) {
+      output.textContent = '⚠️ Please confirm the account before scanning.';
+      return;
+    }
+
+    // Hide the table view
+    document.getElementById('tableView').classList.add('hidden');
+
+    // Show the scanning view
+    document.getElementById('scanningView').classList.remove('hidden');
+
+    // Update status
+    output.textContent = '📷 Initializing camera...';
+
+    // Start scanning
+    codeReader.listVideoInputDevices().then(devices => {
+      if (devices.length === 0) {
+        output.textContent = '❌ No camera found.';
+        return;
+      }
+      currentDeviceId = devices[0].deviceId;
+      startScan();
+    }).catch(err => {
+      output.textContent = `❌ Camera error: ${err.message || err}`;
+      console.error(err);
+    });
+  });
 
   cancelScanBtn.addEventListener('click', () => {
     codeReader.reset();
@@ -366,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateViewState();
   });
 
+  scanNextBtn.addEventListener('click', () => startScan());
 
   submitBtn.addEventListener('click', () => {
     if (scannedCodes.length === 0) {
@@ -408,4 +445,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // });
 
   });
+
 });
