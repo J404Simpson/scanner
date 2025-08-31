@@ -214,32 +214,31 @@ document.addEventListener('DOMContentLoaded', () => {
   function addToTable(index, entry) {
     const parsed = isLikelyGS1(entry.code)
       ? parseGS1(entry.code, entry.format)
-      : { code: entry.code }; // fallback for non-GS1
+      : { code: entry.code };
 
     const scannedLot = parsed.lot || '';
 
-    // ✅ Find matching consignment item
+    // Find matching consignment item
     const matchedItem = consignmentItems.find(item => 
         item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim() === scannedLot.trim()
     );
 
-    // Calculate variance (0 if no match)
-    const consignmentQty = matchedItem ? matchedItem.cr5bd_quantity : 0;
-    const variance = entry.count - consignmentQty;
+    // Use consignment quantity or 0 if not found
+    const quantityInStock = matchedItem ? matchedItem.cr5bd_quantity : 0;
 
     const row = document.createElement('tr');
     row.dataset.code = entry.code;
 
     row.innerHTML = `
       <td data-label="#">${index}</td>
-      <td data-label="Lot Number">${scannedLot}</td>
       <td data-label="Expiry Date">${parsed.expiry || ''}</td>
+      <td data-label="Lot Number">${scannedLot}</td>
       <td data-label="Count" class="count">${entry.count}</td>
-      <td data-label="Variance" class="variance">${variance}</td>
+      <td data-label="Quantity in Stock">${quantityInStock}</td>
       <td data-label="Action"><button class="inline-remove">Remove</button></td>
     `;
 
-    // ✅ Inline remove button
+    // Inline remove button logic
     row.querySelector('.inline-remove').addEventListener('click', () => {
         const code = entry.code;
         const idx = scannedCodes.findIndex(e => e.code === code);
@@ -249,17 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.count > 1) {
                 item.count--;
                 updateCount(code, item.count);
-
-                // Update variance column dynamically
-                const varianceCell = row.querySelector('.variance');
-                varianceCell.textContent = item.count - consignmentQty;
-
+                // Update stock column dynamically
+                row.querySelector('[data-label="Count"]').textContent = item.count;
                 output.textContent = `↩️ Decremented count (${item.count} left)`;
             } else {
                 scannedCodes.splice(idx, 1);
                 row.remove();
                 output.textContent = `🗑️ Removed code from list`;
-
                 if (lastScannedCode === code) lastScannedCode = null;
             }
 
@@ -270,9 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanTableBody.appendChild(row);
 
-    // ✅ Feedback
-    output.textContent = `✅ Added item with Lot #${scannedLot} (Variance: ${variance})`;
-    output.style.color = variance === 0 ? 'green' : 'orange';
+    output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
+    output.style.color = quantityInStock === entry.count ? 'green' : 'orange';
   }
 
   function parseGS1(code, format) {
