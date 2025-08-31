@@ -130,16 +130,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) {
             console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
             consignmentItems = [];
+            renderConsignmentTable();
             return;
         }
 
         const data = await res.json();
         consignmentItems = data.items || [];
-        console.log(`📦 Loaded ${consignmentItems.length} consignment items for warehouse ${warehouseCode}`);
+        renderConsignmentTable();
     } catch (err) {
         console.error('❌ Failed to fetch consignment items:', err);
         consignmentItems = [];
+        renderConsignmentTable();
     }
+  }
+
+  function renderConsignmentTable() {
+    const tbody = document.querySelector('#consignmentTable tbody');
+    tbody.innerHTML = ''; // Clear previous rows
+
+    if (!consignmentItems || consignmentItems.length === 0) {
+      document.getElementById('consignmentSection').classList.add('hidden');
+      return;
+    }
+
+    consignmentItems.forEach((item, index) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${item.cr5bd_lotnumber || ''}</td>
+        <td>${item.cr5bd_quantity || 0}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById('consignmentSection').classList.remove('hidden');
   }
 
   function updateViewState() {
