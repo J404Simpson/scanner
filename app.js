@@ -130,16 +130,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) {
             console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
             consignmentItems = [];
+            renderConsignmentItems();
             return;
         }
 
         const data = await res.json();
         consignmentItems = data.items || [];
         console.log(`📦 Loaded ${consignmentItems.length} consignment items for warehouse ${warehouseCode}`);
+
+        // Render the consignment table
+        renderConsignmentItems();
+
     } catch (err) {
         console.error('❌ Failed to fetch consignment items:', err);
         consignmentItems = [];
+        renderConsignmentItems();
     }
+  }
+
+  function renderConsignmentItems() {
+    const tbody = document.querySelector('#consignmentTable tbody');
+    tbody.innerHTML = ''; // Clear previous rows
+
+    if (!consignmentItems || consignmentItems.length === 0) {
+        document.getElementById('consignmentSection').classList.add('hidden');
+        return;
+    }
+
+    consignmentItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.cr5bd_lotnumber || ''}</td>
+            <td>${item.cr5bd_quantity || 0}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('consignmentSection').classList.remove('hidden');
   }
 
   function updateViewState() {
@@ -209,6 +237,19 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Scan error:', err);
         }
     });
+  }
+
+  async function selectBackCamera() {
+    const devices = await codeReader.listVideoInputDevices();
+    if (devices.length === 0) return null;
+
+    // Try to find a back-facing camera using label (may vary by browser)
+    const backCamera = devices.find(d =>
+        d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear')
+    );
+
+    // Fallback: pick the last camera
+    return backCamera ? backCamera.deviceId : devices[devices.length - 1].deviceId;
   }
 
   function addToTable(index, entry) {
@@ -354,33 +395,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
     if (!confirmedAccount) {
       output.textContent = '⚠️ Please confirm the account before scanning.';
       return;
     }
 
-    // Hide the table view
     document.getElementById('tableView').classList.add('hidden');
-
-    // Show the scanning view
     document.getElementById('scanningView').classList.remove('hidden');
-
-    // Update status
     output.textContent = '📷 Initializing camera...';
 
-    // Start scanning
-    codeReader.listVideoInputDevices().then(devices => {
-      if (devices.length === 0) {
-        output.textContent = '❌ No camera found.';
-        return;
-      }
-      currentDeviceId = devices[0].deviceId;
-      startScan();
-    }).catch(err => {
-      output.textContent = `❌ Camera error: ${err.message || err}`;
-      console.error(err);
-    });
+    try {
+        currentDeviceId = await selectBackCamera();
+        if (!currentDeviceId) {
+            output.textContent = '❌ No camera found.';
+            return;
+        }
+        startScan();
+    } catch (err) {
+        output.textContent = `❌ Camera error: ${err.message || err}`;
+        console.error(err);
+    }
   });
 
   cancelScanBtn.addEventListener('click', () => {
