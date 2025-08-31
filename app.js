@@ -189,7 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
     scannedSection.classList.toggle('hidden', !hasScans);
   }
 
-  function startScan() {
+  async function startScan() {
+    if (!currentDeviceId) {
+        output.textContent = '❌ No camera selected.';
+        console.warn('startScan aborted: currentDeviceId is null');
+        return;
+    }
+
     scanningView.classList.remove('hidden');
     tableView.classList.add('hidden');
 
@@ -199,57 +205,63 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     lastScannedCode = null;
 
-    codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
-        if (result && !scanCooldown) {
-            scanCooldown = true;
-            setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
+    try {
+        await codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
+            if (result && !scanCooldown) {
+                scanCooldown = true;
+                setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
 
-            let code = result.getText().replace(/[\x00-\x1F]/g, '');
-            const format = result.getBarcodeFormat();
+                let code = result.getText().replace(/[\x00-\x1F]/g, '');
+                const format = result.getBarcodeFormat();
 
-            if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-                output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+                if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+                    output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+                    scanNextBtn.disabled = false;
+                    return;
+                }
+
+                const existing = scannedCodes.find(entry => entry.code === code);
+
+                if (existing) {
+                    existing.count++;
+                    updateCount(code, existing.count);
+                    output.textContent = `➕ Duplicate found. Count incremented.`;
+                } else {
+                    const entry = { code, format, count: 1 };
+                    scannedCodes.push(entry);
+                    addToTable(scannedCodes.length, entry);
+                    output.textContent = `✅ New QR code added.`;
+                }
+
+                lastScannedCode = code;
+                scanningView.classList.add('hidden');
+                tableView.classList.remove('hidden');
                 scanNextBtn.disabled = false;
-                return;
+
+                updateViewState();
+            } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                output.textContent = '⚠️ Scan error.';
+                console.error('Scan error:', err);
             }
-
-            const existing = scannedCodes.find(entry => entry.code === code);
-
-            if (existing) {
-                existing.count++;
-                updateCount(code, existing.count);
-                output.textContent = `➕ Duplicate found. Count incremented.`;
-            } else {
-                const entry = { code, format, count: 1 };
-                scannedCodes.push(entry);
-                addToTable(scannedCodes.length, entry);
-                output.textContent = `✅ New QR code added.`;
-            }
-
-            lastScannedCode = code;
-            scanningView.classList.add('hidden');
-            tableView.classList.remove('hidden');
-            scanNextBtn.disabled = false;
-
-            updateViewState();
-        } else if (err && !(err instanceof ZXing.NotFoundException)) {
-            output.textContent = '⚠️ Scan error.';
-            console.error('Scan error:', err);
-        }
-    });
+        });
+    } catch (cameraErr) {
+        output.textContent = `❌ Camera failed to start: ${cameraErr.message || cameraErr}`;
+        console.error('Camera initialization error:', cameraErr);
+    }
   }
 
   async function selectBackCamera() {
     const devices = await codeReader.listVideoInputDevices();
+    console.log('Available video devices:', devices);
+
     if (devices.length === 0) return null;
 
-    // Try to find a back-facing camera using label (may vary by browser)
+    // Try to find a back-facing camera using label
     const backCamera = devices.find(d =>
         d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear')
     );
 
-    // Fallback: pick the last camera
-    return backCamera ? backCamera.deviceId : devices[devices.length - 1].deviceId;
+    return backCamera ? backCamera.deviceId : devices[0].deviceId; // fallback to first camera
   }
 
   function addToTable(index, entry) {
