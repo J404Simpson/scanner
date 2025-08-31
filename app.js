@@ -219,12 +219,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const scannedLot = parsed.lot || '';
 
     // Find matching consignment item
-    const matchedItem = consignmentItems.find(item =>
-      item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
+    const matchedItem = consignmentItems.find(item => 
+        item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim() === scannedLot.trim()
     );
 
     // Use consignment quantity or 0 if not found
-    const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+    const quantityInStock = matchedItem ? matchedItem.cr5bd_quantity : 0;
+
+    const row = document.createElement('tr');
+    row.dataset.code = entry.code;
 
     row.innerHTML = `
       <td data-label="#">${index}</td>
@@ -234,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <td data-label="Quantity in Stock">${quantityInStock}</td>
       <td data-label="Action"><button class="inline-remove">Remove</button></td>
     `;
-
 
     // Inline remove button logic
     row.querySelector('.inline-remove').addEventListener('click', () => {
