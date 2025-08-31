@@ -165,49 +165,49 @@ document.addEventListener('DOMContentLoaded', () => {
     scanningView.classList.remove('hidden');
     tableView.classList.add('hidden');
 
-    codeReader.reset();
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
+
+    codeReader.reset();
     lastScannedCode = null;
 
-
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
-      if (result && !scanCooldown) {
-        scanCooldown = true;
-        setTimeout(() => (scanCooldown = false), 1000); // 1 second lockout
+        if (result && !scanCooldown) {
+            scanCooldown = true;
+            setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
 
-        let code = result.getText().replace(/[\x00-\x1F]/g, '');
-        const format = result.getBarcodeFormat();
+            let code = result.getText().replace(/[\x00-\x1F]/g, '');
+            const format = result.getBarcodeFormat();
 
-        if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-          output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-          codeReader.reset();
-          scanNextBtn.disabled = false;
-          return;
+            if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+                output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+                scanNextBtn.disabled = false;
+                return;
+            }
+
+            const existing = scannedCodes.find(entry => entry.code === code);
+
+            if (existing) {
+                existing.count++;
+                updateCount(code, existing.count);
+                output.textContent = `➕ Duplicate found. Count incremented.`;
+            } else {
+                const entry = { code, format, count: 1 };
+                scannedCodes.push(entry);
+                addToTable(scannedCodes.length, entry);
+                output.textContent = `✅ New QR code added.`;
+            }
+
+            lastScannedCode = code;
+            scanningView.classList.add('hidden');
+            tableView.classList.remove('hidden');
+            scanNextBtn.disabled = false;
+
+            updateViewState();
+        } else if (err && !(err instanceof ZXing.NotFoundException)) {
+            output.textContent = '⚠️ Scan error.';
+            console.error('Scan error:', err);
         }
-
-        lastScannedCode = code;
-
-        const existing = scannedCodes.find(entry => entry.code === code);
-        if (existing) {
-          existing.count++;
-          updateCount(code, existing.count);
-          output.textContent = '➕ Duplicate found. Count incremented.';
-        } else {
-          const entry = { code, format, count: 1 };
-          scannedCodes.push(entry);
-          addToTable(scannedCodes.length, entry);
-          output.textContent = '✅ New QR code added.';
-        }
-
-        scanningView.classList.add('hidden');
-        tableView.classList.remove('hidden');
-        updateViewState();
-      } else if (err && !(err instanceof ZXing.NotFoundException)) {
-        output.textContent = '⚠️ Scan error.';
-        console.error('Scan error:', err);
-        updateViewState();
-      }
     });
   }
 
@@ -218,13 +218,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const scannedLot = parsed.lot || '';
 
-    // Find matching consignment item
-    const matchedItem = consignmentItems.find(item => 
-        item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim() === scannedLot.trim()
+    // Find matching consignment item (normalize lot)
+    const matchedItem = consignmentItems.find(item =>
+        item.cr5bd_lotnumber &&
+        item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
     );
 
-    // Use consignment quantity or 0 if not found
-    const quantityInStock = matchedItem ? matchedItem.cr5bd_quantity : 0;
+    const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
 
     const row = document.createElement('tr');
     row.dataset.code = entry.code;
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td data-label="Action"><button class="inline-remove">Remove</button></td>
     `;
 
-    // Inline remove button logic
+    // Remove button logic
     row.querySelector('.inline-remove').addEventListener('click', () => {
         const code = entry.code;
         const idx = scannedCodes.findIndex(e => e.code === code);
@@ -248,25 +248,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.count > 1) {
                 item.count--;
                 updateCount(code, item.count);
-                // Update stock column dynamically
                 row.querySelector('[data-label="Count"]').textContent = item.count;
                 output.textContent = `↩️ Decremented count (${item.count} left)`;
             } else {
                 scannedCodes.splice(idx, 1);
                 row.remove();
                 output.textContent = `🗑️ Removed code from list`;
-                if (lastScannedCode === code) lastScannedCode = null;
             }
-
-            if (scannedCodes.length === 0) lastScannedCode = null;
-            updateViewState();
         }
+
+        if (scannedCodes.length === 0) lastScannedCode = null;
+        updateViewState();
     });
 
     scanTableBody.appendChild(row);
 
     output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
-    output.style.color = quantityInStock === entry.count ? 'green' : 'orange';
+    output.style.color = quantityInStock >= entry.count ? 'green' : 'orange';
   }
 
   function parseGS1(code, format) {
