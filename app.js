@@ -15,13 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ZXing.BarcodeFormat.CODE_128,
     ZXing.BarcodeFormat.DATA_MATRIX
   ];
-
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-
   const codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
   const scannedCodes = [];
-
   let currentDeviceId = null;
   let lastScannedCode = null;
   let confirmedAccount = null;
@@ -37,134 +34,123 @@ document.addEventListener('DOMContentLoaded', () => {
     const accountNumber = input.value.trim();
 
     if (!accountNumber) {
-        status.textContent = '⚠️ Please enter an account number.';
-        status.style.color = 'darkorange';
-        return;
+      status.textContent = '⚠️ Please enter an account number.';
+      status.style.color = 'darkorange';
+      return;
     }
 
     status.textContent = '🔍 Looking up account...';
     status.style.color = 'black';
 
     try {
-        const res = await fetch(
-            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
-        );
+      const res = await fetch(
+        `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
+      );
 
-        if (res.status === 404) {
-            status.textContent = '❌ Account not found or missing required information.';
-            status.style.color = 'red';
-            return;
-        }
+      if (res.status === 404) {
+        status.textContent = '❌ Account not found or missing required information.';
+        status.style.color = 'red';
+        return;
+      }
 
-        if (res.status === 422) {
-            status.textContent = '⚠️ Account exists but warehouse code is missing. Please contact support.';
-            status.style.color = 'darkorange';
-            return;
-        }
+      if (res.status === 422) {
+        status.textContent = '⚠️ Account exists but warehouse code is missing. Please contact support.';
+        status.style.color = 'darkorange';
+        return;
+      }
 
-        if (!res.ok) {
-            status.textContent = '❌ Server error. Please try again later.';
-            status.style.color = 'red';
-            return;
-        }
+      if (!res.ok) {
+        status.textContent = '❌ Server error. Please try again later.';
+        status.style.color = 'red';
+        return;
+      }
 
-        const data = await res.json();
+      const data = await res.json();
 
-        status.innerHTML = `
-            ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>Is this correct? 
-            <button id="confirmAccountBtn">Yes</button> 
-            <button id="rejectAccountBtn">No</button>
-        `;
-        status.style.color = 'green';
+      status.innerHTML = `
+        ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>Is this correct? 
+        <button id="confirmAccountBtn">Yes</button> 
+        <button id="rejectAccountBtn">No</button>
+      `;
+      status.style.color = 'green';
 
-        updateViewState();
+      setTimeout(() => {
+        const confirmBtn = document.getElementById('confirmAccountBtn');
+        const rejectBtn = document.getElementById('rejectAccountBtn');
 
-        setTimeout(() => {
-            const confirmBtn = document.getElementById('confirmAccountBtn');
-            const rejectBtn = document.getElementById('rejectAccountBtn');
+        confirmBtn?.addEventListener('click', async () => {
+          confirmedAccount = accountNumber;
+          confirmedAccountName = data.name;
+          confirmedWarehouseCode = data.warehouseCode;
 
-            confirmBtn?.addEventListener('click', async () => {
-                confirmedAccount = accountNumber;
-                confirmedAccountName = data.name;
-                confirmedWarehouseCode = data.warehouseCode;
+          await fetchConsignmentItems(data.warehouseCode);
 
-                // 🔹 Fetch items silently in the background
-                await fetchConsignmentItems(data.warehouseCode);
+          document.getElementById('accountSection').classList.add('hidden');
+          document.getElementById('tableView').classList.remove('hidden');
+          output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+          updateViewState();
+        });
 
-                // Hide input section
-                document.getElementById('accountSection').classList.add('hidden');
-
-                // Show table view (or any next step in your app)
-                document.getElementById('tableView').classList.remove('hidden');
-
-                // Show confirmation message
-                output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
-
-                updateViewState();
-            });
-
-            rejectBtn?.addEventListener('click', () => {
-                confirmedAccount = null;
-                confirmedAccountName = null;
-                confirmedWarehouseCode = null;
-                status.textContent = '⚠️ Please enter the correct account number.';
-                status.style.color = 'darkorange';
-                input.value = '';
-                updateViewState();
-            });
-        }, 0);
+        rejectBtn?.addEventListener('click', () => {
+          confirmedAccount = null;
+          confirmedAccountName = null;
+          confirmedWarehouseCode = null;
+          status.textContent = '⚠️ Please enter the correct account number.';
+          status.style.color = 'darkorange';
+          input.value = '';
+          updateViewState();
+        });
+      }, 0);
 
     } catch (err) {
-        console.error('Account lookup failed:', err);
-        status.textContent = '❌ Network or server error.';
-        status.style.color = 'red';
+      console.error('Account lookup failed:', err);
+      status.textContent = '❌ Network or server error.';
+      status.style.color = 'red';
     }
   }
 
   async function fetchConsignmentItems(warehouseCode) {
     try {
-        const res = await fetch(
-            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
-        );
+      const res = await fetch(
+        `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
+      );
 
-        if (!res.ok) {
-            console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
-            consignmentItems = [];
-            renderConsignmentItems();
-            return;
-        }
-
-        const data = await res.json();
-        consignmentItems = data.items || [];
-        console.log(`📦 Loaded ${consignmentItems.length} consignment items for warehouse ${warehouseCode}`);
-
-        // Render the consignment table
-        renderConsignmentItems();
-
-    } catch (err) {
-        console.error('❌ Failed to fetch consignment items:', err);
+      if (!res.ok) {
+        console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
         consignmentItems = [];
         renderConsignmentItems();
+        return;
+      }
+
+      const data = await res.json();
+      consignmentItems = data.items || [];
+      console.log(`📦 Loaded ${consignmentItems.length} consignment items for warehouse ${warehouseCode}`);
+      renderConsignmentItems();
+
+    } catch (err) {
+      console.error('❌ Failed to fetch consignment items:', err);
+      consignmentItems = [];
+      renderConsignmentItems();
     }
   }
 
   function renderConsignmentItems() {
     const tbody = document.querySelector('#consignmentTable tbody');
-    tbody.innerHTML = ''; // Clear previous rows
+    tbody.innerHTML = '';
 
     if (!consignmentItems || consignmentItems.length === 0) {
-        document.getElementById('consignmentSection').classList.add('hidden');
-        return;
+      document.getElementById('consignmentSection').classList.add('hidden');
+      return;
     }
 
     consignmentItems.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${item.cr5bd_lotnumber || ''}</td>
-            <td>${item.cr5bd_quantity || 0}</td>
-        `;
-        tbody.appendChild(row);
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${item.cr5bd_lotnumber || ''}</td>
+        <td>${item.cr5bd_quantity || 0}</td>
+      `;
+      tbody.appendChild(row);
     });
 
     document.getElementById('consignmentSection').classList.remove('hidden');
@@ -174,26 +160,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const scannedSection = document.getElementById('scannedSection');
     const hasScans = scannedCodes.length > 0;
 
-    // Show Start button only if no scans exist and account is confirmed
     startBtn.classList.toggle('hidden', hasScans || !confirmedAccount);
     startBtn.disabled = !confirmedAccount;
 
-    // Show Scan Next only if there are scans
     scanNextBtn.classList.toggle('invisible', !hasScans);
     scanNextBtn.disabled = !hasScans;
 
-    // Enable Submit only if there are scans
     submitBtn.disabled = !hasScans;
 
-    // Show/hide scanned table
     scannedSection.classList.toggle('hidden', !hasScans);
   }
 
-  async function startScan() {
+  async function selectBackCamera() {
+    try {
+      const devices = await codeReader.listVideoInputDevices();
+      console.log('Available video devices:', devices);
+
+      if (devices.length === 0) return null;
+
+      // Prefer a camera with 'back', 'rear', or 'environment' in label
+      const backCamera = devices.find(d =>
+        d.label.toLowerCase().includes('back') ||
+        d.label.toLowerCase().includes('rear') ||
+        d.label.toLowerCase().includes('environment')
+      );
+
+      // fallback: first device
+      return backCamera ? backCamera.deviceId : devices[0].deviceId;
+
+    } catch (err) {
+      console.error('Error listing video devices:', err);
+      return null;
+    }
+  }
+
+  function startScan() {
     if (!currentDeviceId) {
-        output.textContent = '❌ No camera selected.';
-        console.warn('startScan aborted: currentDeviceId is null');
-        return;
+      output.textContent = '❌ No camera selected.';
+      return;
     }
 
     scanningView.classList.remove('hidden');
@@ -205,205 +209,51 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     lastScannedCode = null;
 
-    try {
-        await codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
-            if (result && !scanCooldown) {
-                scanCooldown = true;
-                setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
+    // Ensure video element settings
+    videoElement.autoplay = true;
+    videoElement.playsInline = true;
+    videoElement.srcObject = null;
 
-                let code = result.getText().replace(/[\x00-\x1F]/g, '');
-                const format = result.getBarcodeFormat();
+    codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
+      if (result && !scanCooldown) {
+        scanCooldown = true;
+        setTimeout(() => (scanCooldown = false), 1000);
 
-                if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-                    output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-                    scanNextBtn.disabled = false;
-                    return;
-                }
+        let code = result.getText().replace(/[\x00-\x1F]/g, '');
+        const format = result.getBarcodeFormat();
 
-                const existing = scannedCodes.find(entry => entry.code === code);
-
-                if (existing) {
-                    existing.count++;
-                    updateCount(code, existing.count);
-                    output.textContent = `➕ Duplicate found. Count incremented.`;
-                } else {
-                    const entry = { code, format, count: 1 };
-                    scannedCodes.push(entry);
-                    addToTable(scannedCodes.length, entry);
-                    output.textContent = `✅ New QR code added.`;
-                }
-
-                lastScannedCode = code;
-                scanningView.classList.add('hidden');
-                tableView.classList.remove('hidden');
-                scanNextBtn.disabled = false;
-
-                updateViewState();
-            } else if (err && !(err instanceof ZXing.NotFoundException)) {
-                output.textContent = '⚠️ Scan error.';
-                console.error('Scan error:', err);
-            }
-        });
-    } catch (cameraErr) {
-        output.textContent = `❌ Camera failed to start: ${cameraErr.message || cameraErr}`;
-        console.error('Camera initialization error:', cameraErr);
-    }
-  }
-
-  async function selectBackCamera() {
-    const devices = await codeReader.listVideoInputDevices();
-    console.log('Available video devices:', devices);
-
-    if (devices.length === 0) return null;
-
-    // Try to find a back-facing camera using label
-    const backCamera = devices.find(d =>
-        d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear')
-    );
-
-    return backCamera ? backCamera.deviceId : devices[0].deviceId; // fallback to first camera
-  }
-
-  function addToTable(index, entry) {
-    const parsed = isLikelyGS1(entry.code)
-      ? parseGS1(entry.code, entry.format)
-      : { code: entry.code };
-
-    const scannedLot = parsed.lot || '';
-
-    // Find matching consignment item (normalize lot)
-    const matchedItem = consignmentItems.find(item =>
-        item.cr5bd_lotnumber &&
-        item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
-    );
-
-    const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
-
-    const row = document.createElement('tr');
-    row.dataset.code = entry.code;
-
-    row.innerHTML = `
-      <td data-label="#">${index}</td>
-      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
-      <td data-label="Lot Number">${scannedLot}</td>
-      <td data-label="Count" class="count">${entry.count}</td>
-      <td data-label="Quantity in Stock">${quantityInStock}</td>
-      <td data-label="Action"><button class="inline-remove">Remove</button></td>
-    `;
-
-    // Remove button logic
-    row.querySelector('.inline-remove').addEventListener('click', () => {
-        const code = entry.code;
-        const idx = scannedCodes.findIndex(e => e.code === code);
-
-        if (idx !== -1) {
-            const item = scannedCodes[idx];
-            if (item.count > 1) {
-                item.count--;
-                updateCount(code, item.count);
-                row.querySelector('[data-label="Count"]').textContent = item.count;
-                output.textContent = `↩️ Decremented count (${item.count} left)`;
-            } else {
-                scannedCodes.splice(idx, 1);
-                row.remove();
-                output.textContent = `🗑️ Removed code from list`;
-            }
+        if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+          output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+          scanNextBtn.disabled = false;
+          return;
         }
 
-        if (scannedCodes.length === 0) lastScannedCode = null;
+        const existing = scannedCodes.find(entry => entry.code === code);
+
+        if (existing) {
+          existing.count++;
+          updateCount(code, existing.count);
+          output.textContent = `➕ Duplicate found. Count incremented.`;
+        } else {
+          const entry = { code, format, count: 1 };
+          scannedCodes.push(entry);
+          addToTable(scannedCodes.length, entry);
+          output.textContent = `✅ New QR code added.`;
+        }
+
+        lastScannedCode = code;
+        scanningView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        scanNextBtn.disabled = false;
         updateViewState();
+      } else if (err && !(err instanceof ZXing.NotFoundException)) {
+        output.textContent = '⚠️ Scan error.';
+        console.error('Scan error:', err);
+      }
     });
-
-    scanTableBody.appendChild(row);
-
-    output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
-    output.style.color = quantityInStock >= entry.count ? 'green' : 'orange';
   }
 
-  function parseGS1(code, format) {
-    const result = {
-      code: code.replace(/[\x00-\x1F]/g, '')  // Check again for control characters like FNC1
-    };
-
-    // If the format is CODE_128 and it's a GS1 format, parse with AI logic
-    if (format === ZXing.BarcodeFormat.CODE_128) {
-      // Replace non-printable ASCII characters (usually FNC1 = ASCII 29)
-      const fnc1 = String.fromCharCode(29);
-
-      let i = 0;
-      while (i < code.length) {
-        const ai2 = code.substr(i, 2);
-        const ai3 = code.substr(i, 3);
-        let ai = null;
-
-        // Try 3-digit AI first
-        if (['240', '241'].includes(ai3)) {
-          ai = ai3;
-          i += 3;
-        } else if (['00', '01', '10', '11', '17', '21'].includes(ai2)) {
-          ai = ai2;
-          i += 2;
-        } else {
-          console.warn('Unknown AI at position', i, code.substr(i, 4));
-          break;
-        }
-
-        let value;
-        if (['00'].includes(ai)) {
-          value = code.substr(i, 18); i += 18;
-        } else if (['01'].includes(ai)) {
-          value = code.substr(i, 14); i += 14;
-        } else if (['17', '11'].includes(ai)) {
-          value = code.substr(i, 6); i += 6;
-        } else if (['10', '21', '240', '241'].includes(ai)) {
-          // Variable length, ends with FNC1 or end of string
-          let end = code.indexOf(fnc1, i);
-          if (end === -1) end = code.length;
-          value = code.substring(i, end);
-          i = end + 1; // skip past separator
-        } else {
-          console.warn('Unhandled AI:', ai);
-          break;
-        }
-
-        switch (ai) {
-          case '01': result.device = value; break;
-          case '17': result.expiry = `20${value.slice(0, 2)}-${value.slice(2, 4)}-${value.slice(4, 6)}`; break;
-          case '11': result.produced = `20${value.slice(0, 2)}-${value.slice(2, 4)}-${value.slice(4, 6)}`; break;
-          case '10': result.lot = value; break;
-          default:
-            result[`AI_${ai}`] = value;
-        }
-      }
-    }
-
-    // If the format is DATA_MATRIX, parse by fixed slices (your logic seems fine)
-    else if (format === ZXing.BarcodeFormat.DATA_MATRIX) {
-      if (code.charCodeAt(0) < 32) {
-        code = code.slice(1);
-      }
-
-      result.device = code.slice(0, 16);
-      result.expiry = `20${code.slice(18, 20)}-${code.slice(20, 22)}-${code.slice(22, 24)}`;
-      result.produced = `20${code.slice(26, 28)}-${code.slice(28, 30)}-${code.slice(30, 32)}`;
-      result.lot = code.slice(34, 44);
-    }
-
-    return result;
-  }
-
-  // Check code is GS1
-  function isLikelyGS1(code) {
-    return /^01\d{14}/.test(code);
-  }
-
-  function updateCount(code, count) {
-    const row = scanTableBody.querySelector(`tr[data-code="${code}"]`);
-    if (row) {
-      const countCell = row.querySelector('.count');
-      if (countCell) countCell.textContent = count;
-    }
-  }
+  // ... (rest of your parsing, addToTable, parseGS1, isLikelyGS1, updateCount, etc. remain unchanged) ...
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
@@ -418,15 +268,15 @@ document.addEventListener('DOMContentLoaded', () => {
     output.textContent = '📷 Initializing camera...';
 
     try {
-        currentDeviceId = await selectBackCamera();
-        if (!currentDeviceId) {
-            output.textContent = '❌ No camera found.';
-            return;
-        }
-        startScan();
+      currentDeviceId = await selectBackCamera();
+      if (!currentDeviceId) {
+        output.textContent = '❌ No camera found.';
+        return;
+      }
+      startScan();
     } catch (err) {
-        output.textContent = `❌ Camera error: ${err.message || err}`;
-        console.error(err);
+      output.textContent = `❌ Camera error: ${err.message || err}`;
+      console.error(err);
     }
   });
 
@@ -461,26 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     console.log(payload);
-
-    // 🔁 Replace this with your real API URL
-    // fetch('https://your-api.com/submit', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ codes: scannedCodes })
-    // })
-    // .then(res => {
-    //   if (!res.ok) throw new Error('Server returned an error');
-    //   return res.json();
-    // })
-    // .then(data => {
-    //   output.textContent = '✅ Data submitted successfully!';
-    //   console.log('Server response:', data);
-    // })
-    // .catch(err => {
-    //   output.textContent = '❌ Submission failed. Check console.';
-    //   console.error('Submission error:', err);
-    // });
-
   });
 
 });
