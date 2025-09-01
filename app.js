@@ -37,86 +37,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const accountNumber = input.value.trim();
 
     if (!accountNumber) {
-        status.textContent = '⚠️ Please enter an account number.';
-        status.style.color = 'darkorange';
+        status.textContent = '⚠ Please enter an account number.';
+        status.style.color = 'red';
         return;
     }
 
     status.textContent = '🔍 Looking up account...';
-    status.style.color = 'black';
+    status.style.color = 'blue';
 
     try {
-        const res = await fetch(
-            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
-        );
+        const res = await fetch(`/api/account?number=${encodeURIComponent(accountNumber)}`);
+        const data = await res.json();
+        console.log("📦 Account API response:", data);
 
+        // ✅ Handle 404 (Account not found)
         if (res.status === 404) {
-            status.textContent = '❌ Account not found or missing required information.';
+            status.textContent = `❌ No account found for ${accountNumber}`;
             status.style.color = 'red';
             return;
         }
 
+        // ✅ Handle 422 (Account exists but missing data)
         if (res.status === 422) {
-            status.textContent = '⚠️ Account exists but warehouse code is missing. Please contact support.';
+            status.textContent = `⚠ Account found but missing required fields. Please contact support.`;
             status.style.color = 'darkorange';
             return;
         }
 
-        if (!res.ok) {
+        // ✅ Handle server errors
+        if (res.status >= 500) {
             status.textContent = '❌ Server error. Please try again later.';
             status.style.color = 'red';
             return;
         }
 
-        const data = await res.json();
-
+        // ✅ Success → Display confirmation buttons
         status.innerHTML = `
-            ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>Is this correct? 
-            <button id="confirmAccountBtn">Yes</button> 
-            <button id="rejectAccountBtn">No</button>
+            ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>
+            Is this correct? 
+            <button id="confirmAccountBtn" class="bg-green-600 text-white px-3 py-1 rounded ml-2">Yes</button>
+            <button id="rejectAccountBtn" class="bg-red-600 text-white px-3 py-1 rounded ml-2">No</button>
         `;
         status.style.color = 'green';
 
-        updateViewState();
+        // ✅ Attach event listeners AFTER innerHTML is updated
+        const confirmBtn = status.querySelector('#confirmAccountBtn');
+        const rejectBtn = status.querySelector('#rejectAccountBtn');
 
-        setTimeout(() => {
-            const confirmBtn = document.getElementById('confirmAccountBtn');
-            const rejectBtn = document.getElementById('rejectAccountBtn');
+        confirmBtn.addEventListener('click', async () => {
+            confirmedAccount = accountNumber;
+            confirmedAccountName = data.name;
+            confirmedWarehouseCode = data.warehouseCode;
 
-            confirmBtn?.addEventListener('click', async () => {
-                confirmedAccount = accountNumber;
-                confirmedAccountName = data.name;
-                confirmedWarehouseCode = data.warehouseCode;
-
-                // 🔹 Fetch items silently in the background
+            try {
                 await fetchConsignmentItems(data.warehouseCode);
+            } catch (err) {
+                console.error("❌ Error fetching consignment items:", err);
+                alert("Failed to load consignment data. Please try again.");
+            }
 
-                // Hide input section
-                document.getElementById('accountSection').classList.add('hidden');
+            document.getElementById('accountSection').classList.add('hidden');
+            document.getElementById('tableView').classList.remove('hidden');
+            output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+            updateViewState();
+        });
 
-                // Show table view (or any next step in your app)
-                document.getElementById('tableView').classList.remove('hidden');
-
-                // Show confirmation message
-                output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
-
-                updateViewState();
-            });
-
-            rejectBtn?.addEventListener('click', () => {
-                confirmedAccount = null;
-                confirmedAccountName = null;
-                confirmedWarehouseCode = null;
-                status.textContent = '⚠️ Please enter the correct account number.';
-                status.style.color = 'darkorange';
-                input.value = '';
-                updateViewState();
-            });
-        }, 0);
+        rejectBtn.addEventListener('click', () => {
+            confirmedAccount = null;
+            confirmedAccountName = null;
+            confirmedWarehouseCode = null;
+            input.value = '';
+            status.textContent = '⚠ Please enter the correct account number.';
+            status.style.color = 'darkorange';
+        });
 
     } catch (err) {
-        console.error('Account lookup failed:', err);
-        status.textContent = '❌ Network or server error.';
+        console.error('❌ Network/Server Error:', err);
+        status.textContent = '❌ Unable to connect. Please try again.';
         status.style.color = 'red';
     }
   }
