@@ -133,10 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const data = await res.json();
-        consignmentItems = data.items || [];
+        console.log("📦 Raw consignment API data:", data);
+
+        // Check if the API returns { items: [...] } or just [...]
+        consignmentItems = Array.isArray(data)
+            ? data
+            : (data.items || []);
+
+        console.log("✅ Processed consignment items:", consignmentItems);
+
         renderConsignmentTable();
     } catch (err) {
-        console.error('❌ Failed to fetch consignment items:', err);
+        console.error("❌ Failed to fetch consignment items:", err);
         consignmentItems = [];
         renderConsignmentTable();
     }
