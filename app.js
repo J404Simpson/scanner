@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     status.style.color = 'blue';
 
     try {
-        const res = await fetch(`/api/account?number=${encodeURIComponent(accountNumber)}`);
+        const res = await fetch(
+          `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`);
         const data = await res.json();
         console.log("📦 Account API response:", data);
 
