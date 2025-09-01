@@ -137,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         consignmentItems = data.items || [];
         renderConsignmentTable();
-        console.log(consignmentItems);
     } catch (err) {
         console.error('❌ Failed to fetch consignment items:', err);
         consignmentItems = [];
