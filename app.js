@@ -37,80 +37,81 @@ document.addEventListener('DOMContentLoaded', () => {
     const accountNumber = input.value.trim();
 
     if (!accountNumber) {
-        status.textContent = '⚠ Please enter an account number.';
-        status.style.color = 'red';
-        return;
+      status.textContent = '⚠ Please enter an account number.';
+      status.style.color = 'red';
+      return;
     }
 
     status.textContent = '🔍 Looking up account...';
     status.style.color = 'blue';
 
     try {
-        const res = await fetch(
-          `/api/account?number=${encodeURIComponent(accountNumber)}`);
-        const data = await res.json();
-        console.log("📦 Account API response:", data);
+      const res = await fetch(
+        `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
+      );
+      const data = await res.json();
+      console.log("📦 Account API response:", data);
 
-        // ✅ Handle 404 (Account not found)
-        if (res.status === 404) {
-            status.textContent = `❌ No account found for ${accountNumber}`;
-            status.style.color = 'red';
-            return;
+      // ✅ Handle 404 (Account not found)
+      if (res.status === 404) {
+        status.textContent = `❌ No account found for ${accountNumber}`;
+        status.style.color = 'red';
+        return;
+      }
+
+      // ✅ Handle 422 (Account exists but missing data)
+      if (res.status === 422) {
+        status.textContent = `⚠ Account found but missing required fields. Please contact support.`;
+        status.style.color = 'darkorange';
+        return;
+      }
+
+      // ✅ Handle server errors
+      if (res.status >= 500) {
+        status.textContent = '❌ Server error. Please try again later.';
+        status.style.color = 'red';
+        return;
+      }
+
+      // ✅ Success → Display confirmation buttons
+      status.innerHTML = `
+        ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>
+        Is this correct? 
+        <button id="confirmAccountBtn" class="bg-green-600 text-white px-3 py-1 rounded ml-2">Yes</button>
+        <button id="rejectAccountBtn" class="bg-red-600 text-white px-3 py-1 rounded ml-2">No</button>
+      `;
+      status.style.color = 'green';
+
+      // ✅ Attach event listeners AFTER innerHTML is updated
+      const confirmBtn = status.querySelector('#confirmAccountBtn');
+      const rejectBtn = status.querySelector('#rejectAccountBtn');
+
+      confirmBtn.addEventListener('click', async () => {
+        confirmedAccount = accountNumber;
+        confirmedAccountName = data.name;
+        confirmedWarehouseCode = data.warehouseCode;
+
+        try {
+          await fetchConsignmentItems(data.warehouseCode);
+        } catch (err) {
+          console.error("❌ Error fetching consignment items:", err);
+          alert("Failed to load consignment data. Please try again.");
         }
 
-        // ✅ Handle 422 (Account exists but missing data)
-        if (res.status === 422) {
-            status.textContent = `⚠ Account found but missing required fields. Please contact support.`;
-            status.style.color = 'darkorange';
-            return;
-        }
+        document.getElementById('accountSection').classList.add('hidden');
+        document.getElementById('tableView').classList.remove('hidden');
+        output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+        updateViewState();
+      });
 
-        // ✅ Handle server errors
-        if (res.status >= 500) {
-            status.textContent = '❌ Server error. Please try again later.';
-            status.style.color = 'red';
-            return;
-        }
-
-        // ✅ Success → Display confirmation buttons
-        status.innerHTML = `
-            ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>
-            Is this correct? 
-            <button id="confirmAccountBtn" class="bg-green-600 text-white px-3 py-1 rounded ml-2">Yes</button>
-            <button id="rejectAccountBtn" class="bg-red-600 text-white px-3 py-1 rounded ml-2">No</button>
-        `;
-        status.style.color = 'green';
-
-        // ✅ Attach event listeners AFTER innerHTML is updated
-        const confirmBtn = status.querySelector('#confirmAccountBtn');
-        const rejectBtn = status.querySelector('#rejectAccountBtn');
-
-        confirmBtn.addEventListener('click', async () => {
-            confirmedAccount = accountNumber;
-            confirmedAccountName = data.name;
-            confirmedWarehouseCode = data.warehouseCode;
-
-            try {
-                await fetchConsignmentItems(data.warehouseCode);
-            } catch (err) {
-                console.error("❌ Error fetching consignment items:", err);
-                alert("Failed to load consignment data. Please try again.");
-            }
-
-            document.getElementById('accountSection').classList.add('hidden');
-            document.getElementById('tableView').classList.remove('hidden');
-            output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
-            updateViewState();
-        });
-
-        rejectBtn.addEventListener('click', () => {
-            confirmedAccount = null;
-            confirmedAccountName = null;
-            confirmedWarehouseCode = null;
-            input.value = '';
-            status.textContent = '⚠ Please enter the correct account number.';
-            status.style.color = 'darkorange';
-        });
+      rejectBtn.addEventListener('click', () => {
+        confirmedAccount = null;
+        confirmedAccountName = null;
+        confirmedWarehouseCode = null;
+        input.value = '';
+        status.textContent = '⚠ Please enter the correct account number.';
+        status.style.color = 'darkorange';
+      });
 
     } catch (err) {
         console.error('❌ Network/Server Error:', err);
@@ -121,32 +122,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchConsignmentItems(warehouseCode) {
     try {
-        const res = await fetch(
-            `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
-        );
+      const res = await fetch(
+        `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
+      );
 
-        if (!res.ok) {
-            console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
-            consignmentItems = [];
-            renderConsignmentTable();
-            return;
-        }
-
-        const data = await res.json();
-        console.log("📦 Raw consignment API data:", data);
-
-        // Check if the API returns { items: [...] } or just [...]
-        consignmentItems = Array.isArray(data)
-            ? data
-            : (data.items || []);
-
-        console.log("✅ Processed consignment items:", consignmentItems);
-
-        renderConsignmentTable();
-    } catch (err) {
-        console.error("❌ Failed to fetch consignment items:", err);
+      if (!res.ok) {
+        console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
         consignmentItems = [];
         renderConsignmentTable();
+        return;
+      }
+
+      const data = await res.json();
+      console.log("📦 Raw consignment API data:", data);
+
+      // Check if the API returns { items: [...] } or just [...]
+      consignmentItems = Array.isArray(data)
+      ? data
+      : (data.items || []);
+
+      console.log("✅ Processed consignment items:", consignmentItems);
+
+      renderConsignmentTable();
+    } catch (err) {
+      console.error("❌ Failed to fetch consignment items:", err);
+      consignmentItems = [];
+      renderConsignmentTable();
     }
   }
 
