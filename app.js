@@ -397,18 +397,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scanNextBtn.addEventListener('click', () => startScan());
 
-  submitBtn.addEventListener('click', () => {
-    if (scannedCodes.length === 0) {
-      output.textContent = '⚠️ No codes to submit.';
+  submitBtn.addEventListener('click', async () => {
+    if (!scannedCodes.length || !confirmedAccount) {
+      output.textContent = '⚠ Missing scans or account';
       return;
     }
-
-    if (!confirmedAccount) {
-      output.textContent = '⚠️ No account confirmed.';
-      return;
-    }
-
-    output.textContent = '🚀 Submitting scanned codes...';
 
     const payload = {
       account: confirmedAccount,
@@ -416,27 +409,27 @@ document.addEventListener('DOMContentLoaded', () => {
       codes: scannedCodes
     };
 
-    console.log(payload);
+    try {
+      const res = await fetch(
+        'https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    // 🔁 Replace this with your real API URL
-    // fetch('https://your-api.com/submit', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ codes: scannedCodes })
-    // })
-    // .then(res => {
-    //   if (!res.ok) throw new Error('Server returned an error');
-    //   return res.json();
-    // })
-    // .then(data => {
-    //   output.textContent = '✅ Data submitted successfully!';
-    //   console.log('Server response:', data);
-    // })
-    // .catch(err => {
-    //   output.textContent = '❌ Submission failed. Check console.';
-    //   console.error('Submission error:', err);
-    // });
+      const data = await res.json();
+      if (res.ok) {
+        output.textContent = '✅ Flow triggered successfully!';
+        console.log('Flow response:', data);
+      } else {
+        output.textContent = '❌ Failed to trigger flow';
+        console.error('Flow error:', data);
+      }
 
+    } catch (err) {
+      output.textContent = '❌ Network error triggering flow';
+      console.error(err);
+    }
   });
 
 });
