@@ -234,8 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     row.innerHTML = `
       <td data-label="#">${index}</td>
-      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
       <td data-label="Lot Number">${scannedLot}</td>
+      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
       <td data-label="Count" class="count">${entry.count}</td>
       <td data-label="Quantity in Stock">${quantityInStock}</td>
       <td data-label="Action"><button class="inline-remove">Remove</button></td>
