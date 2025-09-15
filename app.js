@@ -183,11 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
             let code = result.getText().replace(/[\x00-\x1F]/g, '');
             const format = result.getBarcodeFormat();
 
-            if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-                output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-                scanNextBtn.disabled = false;
-                return;
-            }
+            // if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+            //     output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+            //     scanNextBtn.disabled = false;
+            //     return;
+            // }
 
             const existing = scannedCodes.find(entry => entry.code === code);
 
