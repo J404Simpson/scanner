@@ -3,13 +3,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const output = document.getElementById('output');
   const scanningView = document.getElementById('scanningView');
   const tableView = document.getElementById('tableView');
+  const confirmationView = document.getElementById('confirmationView');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
   // const switchCameraBtn = document.getElementById('switchCameraBtn');
   const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
+  const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+  const cancelSubmitBtn = document.getElementById('cancelSubmitBtn');
   const itemTableBody = document.querySelector('#itemTable tbody');
+
   const scanTableBody = document.querySelector('#scanTable tbody');
 
   const hints = new Map();
@@ -116,10 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
           alert("Failed to load consignment data. Please try again.");
         }
 
-        // document.getElementById('accountSection').classList.add('hidden');
-        // document.getElementById('tableView').classList.remove('hidden');
-        // output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
-        // updateViewState();
       });
 
       rejectBtn.addEventListener('click', () => {
@@ -443,33 +443,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scanNextBtn.addEventListener('click', () => startScan());
 
-  submitBtn.addEventListener('click', async () => {
+  submitBtn.addEventListener('click', () => {
     if (!confirmedAccount) {
       output.textContent = '⚠ Missing account';
       return;
     }
 
-    // 🔑 Extract data directly from the itemTable
     const rows = Array.from(itemTableBody.querySelectorAll('tr'));
-    const codes = rows.map(row => {
-      return {
-        lot: row.querySelector('[data-label="Lot Number"]').textContent.trim(),
-        expiry: row.querySelector('[data-label="Expiry Date"]').textContent.trim(),
-        count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0,
-        quantityInStock: parseInt(row.querySelector('[data-label="Quantity in Stock"]').textContent.trim(), 10) || 0
-      };
-    });
+    const codes = rows.map(row => ({
+      lot: row.querySelector('[data-label="Lot Number"]').textContent.trim(),
+      expiry: row.querySelector('[data-label="Expiry Date"]').textContent.trim(),
+      count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0,
+      quantityInStock: parseInt(row.querySelector('[data-label="Quantity in Stock"]').textContent.trim(), 10) || 0
+    }));
 
     if (codes.length === 0) {
       output.textContent = '⚠ No scanned items to submit';
       return;
     }
 
-    const payload = {
+    // Hide everything else and show confirmation screen
+    document.getElementById('tableView').classList.add('hidden');
+    document.getElementById('scanningView').classList.add('hidden');
+    document.getElementById('confirmationView').classList.remove('hidden');
+
+    // Store payload for later
+    window.pendingSubmission = {
       account: confirmedAccount,
       accountName: confirmedAccountName,
       codes
     };
+  });
+
+  confirmSubmitBtn.addEventListener('click', async () => {
+    if (!window.pendingSubmission) return;
+
+    // Hide confirmation view
+    confirmationView.classList.add('hidden');
+
+    // Show "Submitting..." message
+    output.textContent = '📤 Submitting...';
 
     try {
       const res = await fetch(
@@ -477,14 +490,19 @@ document.addEventListener('DOMContentLoaded', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(window.pendingSubmission)
         }
       );
 
       const data = await res.json();
+
       if (res.ok) {
         output.textContent = '✅ Flow triggered successfully!';
         console.log('Flow response:', data);
+        // Clear table & scannedCodes
+        itemTableBody.innerHTML = '';
+        scannedCodes.length = 0;
+        updateViewState();
       } else {
         output.textContent = '❌ Failed to trigger flow';
         console.error('Flow error:', data);
@@ -493,6 +511,16 @@ document.addEventListener('DOMContentLoaded', () => {
       output.textContent = '❌ Network error triggering flow';
       console.error(err);
     }
+
+    // Clear pending submission
+    window.pendingSubmission = null;
+  });
+
+  cancelSubmitBtn.addEventListener('click', () => {
+    confirmationView.classList.add('hidden');
+    tableView.classList.remove('hidden');  // Show the table again
+    output.textContent = '⚠ Submission cancelled';
+    window.pendingSubmission = null;
   });
 
 });
