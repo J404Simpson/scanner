@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Enable Submit only if there are scans
     submitBtn.disabled = !hasScans;
 
-    // Show/hide scanned table
+    // Show/hide submit button
     buttonSection.classList.toggle('hidden', !hasScans);
   }
 
