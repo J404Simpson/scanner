@@ -462,17 +462,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Hide everything else and show confirmation screen
-    document.getElementById('tableView').classList.add('hidden');
-    document.getElementById('scanningView').classList.add('hidden');
-    document.getElementById('confirmationView').classList.remove('hidden');
-
-    // Store payload for later
+    // Store payload for later submission
     window.pendingSubmission = {
       account: confirmedAccount,
       accountName: confirmedAccountName,
       codes
     };
+
+    // Hide main views, show confirmation
+    tableView.classList.add('hidden');
+    scanningView.classList.add('hidden');
+    confirmationView.classList.remove('hidden');
+
+    output.textContent = ''; // Clear previous messages
   });
 
   confirmSubmitBtn.addEventListener('click', async () => {
@@ -481,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide confirmation view
     confirmationView.classList.add('hidden');
 
-    // Show "Submitting..." message
+    // Show submitting message
     output.textContent = '📤 Submitting...';
 
     try {
@@ -497,19 +499,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (res.ok) {
-        output.textContent = '✅ Flow triggered successfully!';
-        console.log('Flow response:', data);
-        // Clear table & scannedCodes
+        // ✅ Success message
+        output.textContent = '✅ Table submitted successfully!';
+
+        // Clear table and scanned codes
         itemTableBody.innerHTML = '';
         scannedCodes.length = 0;
         updateViewState();
+
+        // Optionally show instructions after a short delay
+        setTimeout(() => {
+          output.textContent = 'Click "Start Scanning" to scan more items.';
+          tableView.classList.remove('hidden'); // Show table for next session
+        }, 3000);
+
       } else {
-        output.textContent = '❌ Failed to trigger flow';
+        output.textContent = '❌ Failed to submit table';
         console.error('Flow error:', data);
+        tableView.classList.remove('hidden'); // Allow retry
       }
     } catch (err) {
       output.textContent = '❌ Network error triggering flow';
       console.error(err);
+      tableView.classList.remove('hidden'); // Allow retry
     }
 
     // Clear pending submission
@@ -518,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cancelSubmitBtn.addEventListener('click', () => {
     confirmationView.classList.add('hidden');
-    tableView.classList.remove('hidden');  // Show the table again
+    tableView.classList.remove('hidden');
     output.textContent = '⚠ Submission cancelled';
     window.pendingSubmission = null;
   });
