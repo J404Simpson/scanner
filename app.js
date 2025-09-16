@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <td data-label="#">${index + 1}</td>
         <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
-        <td data-label="Expiry Date">${item.cr5bd_expirydate || ''}</td>
+        <td data-label="Expiry Date">${formatDate(item.cr5bd_expirydate)}</td>
         <td data-label="Quantity in Stock">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
         <td data-label="Action"><button class="inline-remove">Remove</button></td>
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = !hasScans;
 
     // Show/hide scanned table
-    scannedSection.classList.toggle('hidden', !hasScans);
+    // scannedSection.classList.toggle('hidden', !hasScans);
   }
 
   function startScan() {
@@ -388,6 +388,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function isLikelyGS1(code) {
     return /^01\d{14}/.test(code);
   }
+
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0]; // ✅ gives "YYYY-MM-DD"
+  }
+
 
   function updateCount(code, count) {
     const row = scanTableBody.querySelector(`tr[data-code="${code}"]`);
