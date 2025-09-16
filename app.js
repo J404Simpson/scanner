@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (res.ok) {
         // ✅ Only show confirmation message
-        output.textContent = '✅ Table submitted successfully!';
+        submissionMessage.textContent = '✅ Table submitted successfully!';
         
         // Clear all data
         itemTableBody.innerHTML = '';
@@ -518,11 +518,11 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmedWarehouseCode = null;
         window.pendingSubmission = null;
       } else {
-        output.textContent = '❌ Failed to submit table';
+        submissionMessage.textContent = '❌ Failed to submit table';
         console.error('Flow error:', data);
       }
     } catch (err) {
-      output.textContent = '❌ Network error triggering flow';
+      submissionMessage.textContent = '❌ Network error triggering flow';
       console.error(err);
     }
   });
