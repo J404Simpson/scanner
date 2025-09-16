@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const deviceId = devices[currentDeviceIndex].deviceId;
 
-    codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
+    codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
         if (result && !scanCooldown) {
             scanCooldown = true;
             setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
@@ -413,6 +413,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Move to next camera
     currentDeviceIndex = (currentDeviceIndex + 1) % devices.length;
 
+    // Update the currentDeviceId
+    currentDeviceId = devices[currentDeviceIndex].deviceId;
+    
     // Restart scanning with new camera
     startScan();
   });
