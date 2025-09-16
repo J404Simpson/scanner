@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = !hasScans;
 
     // Show/hide scanned table
-    // scannedSection.classList.toggle('hidden', !hasScans);
+    scannedSection.classList.toggle('hidden', !hasScans);
   }
 
   function startScan() {
