@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanningView = document.getElementById('scanningView');
   const tableView = document.getElementById('tableView');
   const confirmationView = document.getElementById('confirmationView');
+  const tableSection = document.getElementById('tableSection');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
   // const switchCameraBtn = document.getElementById('switchCameraBtn');
