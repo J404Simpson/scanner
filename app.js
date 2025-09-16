@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
+  const itemTableBody = document.querySelector('#itemTable tbody');
   const scanTableBody = document.querySelector('#scanTable tbody');
 
   const hints = new Map();
@@ -115,10 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
           alert("Failed to load consignment data. Please try again.");
         }
 
-        document.getElementById('accountSection').classList.add('hidden');
-        document.getElementById('tableView').classList.remove('hidden');
-        output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
-        updateViewState();
+        // document.getElementById('accountSection').classList.add('hidden');
+        // document.getElementById('tableView').classList.remove('hidden');
+        // output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+        // updateViewState();
       });
 
       rejectBtn.addEventListener('click', () => {
@@ -144,9 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
       );
 
       if (!res.ok) {
-        console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
-        consignmentItems = [];
-        return;
+        throw new Error(`Unable to fetch items for ${warehouseCode}, status ${res.status}`);
+        // console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
+        // consignmentItems = [];
+        // return;
       }
 
       const data = await res.json();
@@ -160,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error("❌ Failed to fetch consignment items:", err);
       consignmentItems = [];
+      throw err;
     }
   }
 
