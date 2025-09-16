@@ -28,20 +28,23 @@
 
     <!-- Confirmed Account Name Display -->
     <div id="confirmedAccountName" class="text-center font-semibold text-lg mb-4 text-blue-700"></div>
-
-    <table id="itemTable" class="table-auto w-full text-sm border border-gray-300">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="border px-2 py-1">#</th>
-          <th class="border px-2 py-1">Lot Number</th>
-          <th class="border px-2 py-1">Expiry Date</th>
-          <th class="border px-2 py-1">Quantity</th>
-          <th class="border px-2 py-1">Count</th>
-          <th class="border px-2 py-1">Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    
+    <h2 class="text-xl font-semibold mb-2">Item Codes</h2>
+    <div class="overflow-x-auto">
+      <table id="itemTable" class="table-auto w-full text-sm border border-gray-300">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border px-2 py-1">#</th>
+            <th class="border px-2 py-1">Lot Number</th>
+            <th class="border px-2 py-1">Expiry Date</th>
+            <th class="border px-2 py-1">Quantity</th>
+            <th class="border px-2 py-1">Count</th>
+            <th class="border px-2 py-1">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mb-3 w-full">Start Scanning</button>
     
