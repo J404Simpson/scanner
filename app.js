@@ -236,18 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const existing = scannedCodes.find(entry => entry.code === code);
-
-            if (existing) {
-                existing.count++;
-                updateCount(code, existing.count);
-                output.textContent = `➕ Duplicate found. Count incremented.`;
-            } else {
-                const entry = { code, format, count: 1 };
-                scannedCodes.push(entry);
-                addToTable(scannedCodes.length, entry);
-                output.textContent = `✅ New QR code added.`;
-            }
+            const entry = { code, format, count: 1 };
+            scannedCodes.push(entry);
+            addToTable(scannedCodes.length, entry);
 
             lastScannedCode = code;
             scanningView.classList.add('hidden');
