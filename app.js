@@ -483,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide everything
     confirmationView.classList.add('hidden');
     tableView.classList.remove('hidden');
+    tableSection.classList.add('hidden');
     scanningView.classList.add('hidden');
     document.getElementById('accountSection').classList.add('hidden');
 
