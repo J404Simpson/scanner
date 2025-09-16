@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelSubmitBtn = document.getElementById('cancelSubmitBtn');
   const itemTableBody = document.querySelector('#itemTable tbody');
 
-  const scanTableBody = document.querySelector('#scanTable tbody');
-
   const hints = new Map();
   const formats = [
     ZXing.BarcodeFormat.CODE_128,
