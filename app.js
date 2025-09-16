@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tableView = document.getElementById('tableView');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
+  const switchCameraBtn = document.getElementById('switchCameraBtn');
   const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
@@ -28,8 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let confirmedAccountName = null;
   let scanCooldown = false;
   let consignmentItems = [];
+  let devices = [];
+  let currentDeviceIndex = 0;
 
   updateViewState();
+  initCameras();
 
   async function verifyAccountNumber() {
     const input = document.getElementById('accountInput');
@@ -175,6 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
     codeReader.reset();
     lastScannedCode = null;
 
+    const deviceId = devices[currentDeviceIndex].deviceId;
+
     codeReader.decodeFromVideoDevice(currentDeviceId, videoElement, (result, err) => {
         if (result && !scanCooldown) {
             scanCooldown = true;
@@ -213,6 +219,21 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Scan error:', err);
         }
     });
+  }
+
+  async function initCameras() {
+    devices = await codeReader.listVideoInputDevices();
+    if (devices.length === 0) {
+      output.textContent = '❌ No camera found.';
+      return;
+    }
+    // Start with the rear-facing camera if available
+    const backCamIndex = devices.findIndex(d =>
+      d.label.toLowerCase().includes('back') ||
+      d.label.toLowerCase().includes('rear') ||
+      d.label.toLowerCase().includes('environment')
+    );
+    currentDeviceIndex = backCamIndex !== -1 ? backCamIndex : 0;
   }
 
   function addToTable(index, entry) {
@@ -384,6 +405,16 @@ document.addEventListener('DOMContentLoaded', () => {
       output.textContent = `❌ Camera error: ${err.message || err}`;
       console.error(err);
     });
+  });
+  
+  switchCameraBtn.addEventListener('click', () => {
+    if (!devices.length) return;
+
+    // Move to next camera
+    currentDeviceIndex = (currentDeviceIndex + 1) % devices.length;
+
+    // Restart scanning with new camera
+    startScan();
   });
 
   cancelScanBtn.addEventListener('click', () => {
