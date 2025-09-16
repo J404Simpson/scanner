@@ -300,7 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Expiry Date">${parsed.expiry || ''}</td>
         <td data-label="Quantity in Stock">${quantityInStock}</td>
         <td data-label="Count">1</td>
-        <td data-label="Action"><button class="inline-remove">Remove</button></td>
       `;
 
       row.querySelector('.inline-remove').addEventListener('click', () => row.remove());
@@ -312,61 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     output.style.color = 'green';
   }
-
-  // function addToTable(index, entry) {
-  //   const parsed = isLikelyGS1(entry.code)
-  //     ? parseGS1(entry.code, entry.format)
-  //     : { code: entry.code };
-
-  //   const scannedLot = parsed.lot || '';
-
-  //   // Find matching consignment item
-  //   const matchedItem = consignmentItems.find(item =>
-  //       item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
-  //   );
-
-  //   const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
-
-  //   const row = document.createElement('tr');
-  //   row.dataset.code = entry.code;
-
-  //   row.innerHTML = `
-  //     <td data-label="#">${index}</td>
-  //     <td data-label="Lot Number">${scannedLot}</td>
-  //     <td data-label="Expiry Date">${parsed.expiry || ''}</td>
-  //     <td data-label="Count" class="count">${entry.count}</td>
-  //     <td data-label="Quantity in Stock">${quantityInStock}</td>
-  //     <td data-label="Action"><button class="inline-remove">Remove</button></td>
-  //   `;
-
-  //   // Inline remove button logic
-  //   row.querySelector('.inline-remove').addEventListener('click', () => {
-  //       const code = entry.code;
-  //       const idx = scannedCodes.findIndex(e => e.code === code);
-
-  //       if (idx !== -1) {
-  //           const item = scannedCodes[idx];
-  //           if (item.count > 1) {
-  //               item.count--;
-  //               updateCount(code, item.count);
-  //               row.querySelector('[data-label="Count"]').textContent = item.count;
-  //               output.textContent = `↩️ Decremented count (${item.count} left)`;
-  //           } else {
-  //               scannedCodes.splice(idx, 1);
-  //               row.remove();
-  //               output.textContent = `🗑️ Removed code from list`;
-  //           }
-
-  //           if (scannedCodes.length === 0) lastScannedCode = null;
-  //           updateViewState();
-  //       }
-  //   });
-
-  //   scanTableBody.appendChild(row);
-
-  //   output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
-  //   output.style.color = quantityInStock >= entry.count ? 'green' : 'orange';
-  // }
 
   function parseGS1(code, format) {
     const result = {
