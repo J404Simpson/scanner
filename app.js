@@ -95,8 +95,21 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmedAccountName = data.name;
         confirmedWarehouseCode = data.warehouseCode;
 
+        // Show loading while fetching items
+        output.textContent = '📦 Loading consignment items...';
+
         try {
           await fetchConsignmentItems(data.warehouseCode);
+
+          // After fetch completes, populate the table
+          populateConsignmentTable();
+
+          // Hide account section and show table view
+          document.getElementById('accountSection').classList.add('hidden');
+          document.getElementById('tableView').classList.remove('hidden');
+
+          output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+          updateViewState();
         } catch (err) {
           console.error("❌ Error fetching consignment items:", err);
           alert("Failed to load consignment data. Please try again.");
@@ -148,6 +161,30 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("❌ Failed to fetch consignment items:", err);
       consignmentItems = [];
     }
+  }
+
+  function populateConsignmentTable() {
+    // Clear existing table
+    itemTableBody.innerHTML = '';
+
+    // Add each consignment item as a row
+    consignmentItems.forEach((item, index) => {
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td data-label="#">${index + 1}</td>
+        <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
+        <td data-label="Expiry Date">${item.cr5bd_expiry || ''}</td>
+        <td data-label="Quantity in Stock">${item.cr5bd_quantity || 0}</td>
+        <td data-label="Action"><button class="inline-remove">Remove</button></td>
+      `;
+
+      row.querySelector('.inline-remove').addEventListener('click', () => {
+        row.remove();
+      });
+
+      itemTableBody.appendChild(row);
+    });
   }
 
   function updateViewState() {
