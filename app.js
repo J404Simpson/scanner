@@ -469,6 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hide main views, show confirmation
     tableSection.classList.add('hidden');
+    tableView.classList.add('hidden');
     scanningView.classList.add('hidden');
     confirmationView.classList.remove('hidden');
 
@@ -480,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hide everything
     confirmationView.classList.add('hidden');
-    tableView.classList.add('hidden');
+    tableView.classList.remove('hidden');
     scanningView.classList.add('hidden');
     document.getElementById('accountSection').classList.add('hidden');
 
