@@ -453,38 +453,55 @@ document.addEventListener('DOMContentLoaded', () => {
   scanNextBtn.addEventListener('click', () => startScan());
 
   submitBtn.addEventListener('click', async () => {
-    if (!scannedCodes.length || !confirmedAccount) {
-      output.textContent = '⚠ Missing scans or account';
-      return;
-    }
+  if (!confirmedAccount) {
+    output.textContent = '⚠ Missing account';
+    return;
+  }
 
-    const payload = {
-      account: confirmedAccount,
-      accountName: confirmedAccountName,
-      codes: scannedCodes
+  // 🔑 Extract data directly from the scanTable
+  const rows = Array.from(scanTableBody.querySelectorAll('tr'));
+  const codes = rows.map(row => {
+    return {
+      lot: row.querySelector('[data-label="Lot Number"]').textContent.trim(),
+      expiry: row.querySelector('[data-label="Expiry Date"]').textContent.trim(),
+      count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0,
+      quantityInStock: parseInt(row.querySelector('[data-label="Quantity in Stock"]').textContent.trim(), 10) || 0
     };
+  });
 
-    try {
-      const res = await fetch(
-        'https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/submit', {
+  if (codes.length === 0) {
+    output.textContent = '⚠ No scanned items to submit';
+    return;
+  }
+
+  const payload = {
+    account: confirmedAccount,
+    accountName: confirmedAccountName,
+    codes
+  };
+
+  try {
+    const res = await fetch(
+      'https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/submit',
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        output.textContent = '✅ Flow triggered successfully!';
-        console.log('Flow response:', data);
-      } else {
-        output.textContent = '❌ Failed to trigger flow';
-        console.error('Flow error:', data);
       }
+    );
 
-    } catch (err) {
-      output.textContent = '❌ Network error triggering flow';
-      console.error(err);
+    const data = await res.json();
+    if (res.ok) {
+      output.textContent = '✅ Flow triggered successfully!';
+      console.log('Flow response:', data);
+    } else {
+      output.textContent = '❌ Failed to trigger flow';
+      console.error('Flow error:', data);
     }
+  } catch (err) {
+    output.textContent = '❌ Network error triggering flow';
+    console.error(err);
+  }
   });
 
 });
