@@ -478,11 +478,16 @@ document.addEventListener('DOMContentLoaded', () => {
   confirmSubmitBtn.addEventListener('click', async () => {
     if (!window.pendingSubmission) return;
 
-    // Hide confirmation view
+    // Hide everything
     confirmationView.classList.add('hidden');
+    tableView.classList.add('hidden');
+    scanningView.classList.add('hidden');
+    document.getElementById('accountSection').classList.add('hidden');
 
     // Show submitting message
     output.textContent = '📤 Submitting...';
+    output.classList.remove('text-gray-700'); // optional: make it more prominent
+    output.classList.add('text-green-600', 'font-semibold', 'text-center', 'text-lg');
 
     try {
       const res = await fetch(
@@ -497,33 +502,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (res.ok) {
-        // ✅ Success message
+        // ✅ Only show confirmation message
         output.textContent = '✅ Table submitted successfully!';
-
-        // Clear table and scanned codes
+        
+        // Clear all data
         itemTableBody.innerHTML = '';
         scannedCodes.length = 0;
-        updateViewState();
-
-        // Optionally show instructions after a short delay
-        setTimeout(() => {
-          output.textContent = 'Click "Start Scanning" to scan more items.';
-          tableView.classList.remove('hidden'); // Show table for next session
-        }, 3000);
-
+        confirmedAccount = null;
+        confirmedAccountName = null;
+        confirmedWarehouseCode = null;
+        window.pendingSubmission = null;
       } else {
         output.textContent = '❌ Failed to submit table';
         console.error('Flow error:', data);
-        tableView.classList.remove('hidden'); // Allow retry
       }
     } catch (err) {
       output.textContent = '❌ Network error triggering flow';
       console.error(err);
-      tableView.classList.remove('hidden'); // Allow retry
     }
-
-    // Clear pending submission
-    window.pendingSubmission = null;
   });
 
   cancelSubmitBtn.addEventListener('click', () => {
