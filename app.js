@@ -284,53 +284,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const scannedLot = parsed.lot || '';
 
-    // Find matching consignment item
-    const matchedItem = consignmentItems.find(item =>
-        item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
-    );
+    // 🔍 Check if lot already exists in the items table
+    const existingRow = Array.from(itemTableBody.querySelectorAll('tr'))
+      .find(row => row.cells[1]?.textContent.trim().toUpperCase() === scannedLot.trim(). toUpperCase());
 
-    const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+    if (existingRow) {
+      // ✅ Increment the Count column (5th column = index 4)
+      const countCell = existingRow.cells[4];
+      countCell.textContent = Number(countCell.textContent) + 1;
+      output.textContent = `➕ Incremented count for Lot #${scannedLot}`;
+    } else {
+      // ❌ No existing row → Add a new one
+      const matchedItem = consignmentItems.find(item =>
+        item.cr5bd_lotnumber &&
+        item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
+      );
 
-    const row = document.createElement('tr');
-    row.dataset.code = entry.code;
+      const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
 
-    row.innerHTML = `
-      <td data-label="#">${index}</td>
-      <td data-label="Lot Number">${scannedLot}</td>
-      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
-      <td data-label="Count" class="count">${entry.count}</td>
-      <td data-label="Quantity in Stock">${quantityInStock}</td>
-      <td data-label="Action"><button class="inline-remove">Remove</button></td>
-    `;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td data-label="#">${itemTableBody.children.length + 1}</td>
+        <td data-label="Lot Number">${scannedLot}</td>
+        <td data-label="Expiry Date">${parsed.expiry || ''}</td>
+        <td data-label="Quantity in Stock">${quantityInStock}</td>
+        <td data-label="Count">1</td>
+        <td data-label="Action"><button class="inline-remove">Remove</button></td>
+      `;
 
-    // Inline remove button logic
-    row.querySelector('.inline-remove').addEventListener('click', () => {
-        const code = entry.code;
-        const idx = scannedCodes.findIndex(e => e.code === code);
+      row.querySelector('.inline-remove').addEventListener('click', () => row.remove());
 
-        if (idx !== -1) {
-            const item = scannedCodes[idx];
-            if (item.count > 1) {
-                item.count--;
-                updateCount(code, item.count);
-                row.querySelector('[data-label="Count"]').textContent = item.count;
-                output.textContent = `↩️ Decremented count (${item.count} left)`;
-            } else {
-                scannedCodes.splice(idx, 1);
-                row.remove();
-                output.textContent = `🗑️ Removed code from list`;
-            }
+      itemTableBody.appendChild(row);
 
-            if (scannedCodes.length === 0) lastScannedCode = null;
-            updateViewState();
-        }
-    });
+      output.textContent = `✅ Added new lot #${scannedLot}`;
+    }
 
-    scanTableBody.appendChild(row);
-
-    output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
-    output.style.color = quantityInStock >= entry.count ? 'green' : 'orange';
+    output.style.color = 'green';
   }
+
+  // function addToTable(index, entry) {
+  //   const parsed = isLikelyGS1(entry.code)
+  //     ? parseGS1(entry.code, entry.format)
+  //     : { code: entry.code };
+
+  //   const scannedLot = parsed.lot || '';
+
+  //   // Find matching consignment item
+  //   const matchedItem = consignmentItems.find(item =>
+  //       item.cr5bd_lotnumber && item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
+  //   );
+
+  //   const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+
+  //   const row = document.createElement('tr');
+  //   row.dataset.code = entry.code;
+
+  //   row.innerHTML = `
+  //     <td data-label="#">${index}</td>
+  //     <td data-label="Lot Number">${scannedLot}</td>
+  //     <td data-label="Expiry Date">${parsed.expiry || ''}</td>
+  //     <td data-label="Count" class="count">${entry.count}</td>
+  //     <td data-label="Quantity in Stock">${quantityInStock}</td>
+  //     <td data-label="Action"><button class="inline-remove">Remove</button></td>
+  //   `;
+
+  //   // Inline remove button logic
+  //   row.querySelector('.inline-remove').addEventListener('click', () => {
+  //       const code = entry.code;
+  //       const idx = scannedCodes.findIndex(e => e.code === code);
+
+  //       if (idx !== -1) {
+  //           const item = scannedCodes[idx];
+  //           if (item.count > 1) {
+  //               item.count--;
+  //               updateCount(code, item.count);
+  //               row.querySelector('[data-label="Count"]').textContent = item.count;
+  //               output.textContent = `↩️ Decremented count (${item.count} left)`;
+  //           } else {
+  //               scannedCodes.splice(idx, 1);
+  //               row.remove();
+  //               output.textContent = `🗑️ Removed code from list`;
+  //           }
+
+  //           if (scannedCodes.length === 0) lastScannedCode = null;
+  //           updateViewState();
+  //       }
+  //   });
+
+  //   scanTableBody.appendChild(row);
+
+  //   output.textContent = `✅ Added item with Lot #${scannedLot} (Stock: ${quantityInStock})`;
+  //   output.style.color = quantityInStock >= entry.count ? 'green' : 'orange';
+  // }
 
   function parseGS1(code, format) {
     const result = {
