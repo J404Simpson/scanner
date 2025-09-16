@@ -484,16 +484,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hide everything
     confirmationView.classList.add('hidden');
-    // tableView.classList.remove('hidden');
-    tableSection.classList.add('hidden');
-    buttonSection.classList.add('hidden');
+    tableView.classList.add('hidden');
     scanningView.classList.add('hidden');
     accountSection.classList.add('hidden');
 
-    // Show submitting message
-    output.textContent = '📤 Submitting...';
-    output.classList.remove('text-gray-700'); // optional: make it more prominent
-    output.classList.add('text-green-600', 'font-semibold', 'text-center', 'text-lg');
+    // Show submitting message in the result view
+    submissionResultView.classList.remove('hidden');
+    submissionMessage.textContent = '📤 Submitting...';
+    submissionMessage.classList.remove('text-red-600');
+    submissionMessage.classList.add('text-green-600');
 
     try {
       const res = await fetch(
