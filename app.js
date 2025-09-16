@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <td data-label="#">${index + 1}</td>
         <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
-        <td data-label="Expiry Date">${item.cr5bd_expiry || ''}</td>
+        <td data-label="Expiry Date">${item.cr5bd_expirydate || ''}</td>
         <td data-label="Quantity in Stock">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
         <td data-label="Action"><button class="inline-remove">Remove</button></td>
