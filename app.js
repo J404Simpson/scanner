@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tableView = document.getElementById('tableView');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
-  const switchCameraBtn = document.getElementById('switchCameraBtn');
+  // const switchCameraBtn = document.getElementById('switchCameraBtn');
   const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
@@ -407,18 +407,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  switchCameraBtn.addEventListener('click', () => {
-    if (!devices.length) return;
+  // switchCameraBtn.addEventListener('click', () => {
+  //   if (!devices.length) return;
 
-    // Move to next camera
-    currentDeviceIndex = (currentDeviceIndex + 1) % devices.length;
+  //   // Move to next camera
+  //   currentDeviceIndex = (currentDeviceIndex + 1) % devices.length;
 
-    // Update the currentDeviceId
-    currentDeviceId = devices[currentDeviceIndex].deviceId;
-    
-    // Restart scanning with new camera
-    startScan();
-  });
+  //   // Update the currentDeviceId
+  //   currentDeviceId = devices[currentDeviceIndex].deviceId;
+
+  //   // Restart scanning with new camera
+  //   startScan();
+  // });
 
   cancelScanBtn.addEventListener('click', () => {
     codeReader.reset();
