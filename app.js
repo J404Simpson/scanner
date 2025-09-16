@@ -4,7 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanningView = document.getElementById('scanningView');
   const tableView = document.getElementById('tableView');
   const confirmationView = document.getElementById('confirmationView');
+  const accountSection = document.getElementById('accountSection');
   const tableSection = document.getElementById('tableSection');
+  const buttonSection = document.getElementById('buttonSection');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
   // const switchCameraBtn = document.getElementById('switchCameraBtn');
@@ -482,10 +484,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hide everything
     confirmationView.classList.add('hidden');
-    tableView.classList.remove('hidden');
+    // tableView.classList.remove('hidden');
     tableSection.classList.add('hidden');
+    buttonSection.classList.add('hidden');
     scanningView.classList.add('hidden');
-    document.getElementById('accountSection').classList.add('hidden');
+    accountSection.classList.add('hidden');
 
     // Show submitting message
     output.textContent = '📤 Submitting...';
