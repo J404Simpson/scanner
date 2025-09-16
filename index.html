@@ -19,8 +19,12 @@
   <!-- Scanning View -->
   <div id="scanningView" class="max-w-2xl mx-auto bg-white shadow p-4 rounded-lg hidden">
     <video id="video" autoplay muted playsinline class="w-full max-w-md mx-auto rounded-lg"></video>
-    <!-- <button id="switchCameraBtn" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hidden">Switch Camera</button> -->
-    <button id="cancelScanBtn" class="bg-red-600 text-white px-4 py-2 rounded">Cancel Scan</button>
+
+    <div class="flex justify-center mt-4">
+      <button id="cancelScanBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+        Cancel Scan
+      </button>
+    </div>
   </div>
   
   <!-- Table View (default after account confirmed) -->
