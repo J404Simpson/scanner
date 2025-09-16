@@ -180,12 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Expiry Date">${formatDate(item.cr5bd_expirydate)}</td>
         <td data-label="Quantity in Stock">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
-        <td data-label="Action"><button class="inline-remove">Remove</button></td>
       `;
-
-      row.querySelector('.inline-remove').addEventListener('click', () => {
-        row.remove();
-      });
 
       itemTableBody.appendChild(row);
     });
@@ -302,8 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Count">1</td>
       `;
 
-      row.querySelector('.inline-remove').addEventListener('click', () => row.remove());
-
       itemTableBody.appendChild(row);
 
       output.textContent = `✅ Added new lot #${scannedLot}`;
@@ -393,15 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toISOString().split('T')[0]; // ✅ gives "YYYY-MM-DD"
-  }
-
-
-  function updateCount(code, count) {
-    const row = scanTableBody.querySelector(`tr[data-code="${code}"]`);
-    if (row) {
-      const countCell = row.querySelector('.count');
-      if (countCell) countCell.textContent = count;
-    }
   }
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
