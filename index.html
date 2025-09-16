@@ -8,8 +8,6 @@
 </head>
 <body class="bg-gray-100 text-gray-800 p-4">
 
-  <div id="output" class="text-center text-sm text-gray-700 mb-4">Click "Start Scanning"</div>
-  
   <!-- Account Verification Section -->
   <div id="accountSection" class="max-w-md mx-auto bg-white shadow p-4 rounded-lg mb-6">
     <label for="accountInput" class="block text-sm font-medium mb-2">Enter Account Number:</label>
@@ -28,30 +26,33 @@
   <!-- Table View (default after account confirmed) -->
   <div id="tableView" class="max-w-2xl mx-auto bg-white shadow p-4 rounded-lg hidden">
 
+    <div id="output" class="text-center text-sm text-gray-700 mb-4">Click "Start Scanning"</div>
+
     <!-- Confirmed Account Name Display -->
     <div id="confirmedAccountName" class="text-center font-semibold text-lg mb-4 text-blue-700"></div>
     
-    <h2 class="text-xl font-semibold mb-2">Item Codes</h2>
-    <div class="overflow-x-auto">
-      <table id="itemTable" class="table-auto w-full text-sm border border-gray-300">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="border px-2 py-1">#</th>
-            <th class="border px-2 py-1">Lot Number</th>
-            <th class="border px-2 py-1">Expiry Date</th>
-            <th class="border px-2 py-1">Quantity</th>
-            <th class="border px-2 py-1">Count</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div id="tableSection" class="hidden"></div>
+      <h2 class="text-xl font-semibold mb-2">Item Codes</h2>
+      <div class="overflow-x-auto">
+        <table id="itemTable" class="table-auto w-full text-sm border border-gray-300">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="border px-2 py-1">#</th>
+              <th class="border px-2 py-1">Lot Number</th>
+              <th class="border px-2 py-1">Expiry Date</th>
+              <th class="border px-2 py-1">Quantity</th>
+              <th class="border px-2 py-1">Count</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mb-3 w-full">Start Scanning</button>
 
     <!-- Wrapper for buttons -->
-    <div id="scannedSection" class="hidden">
-
+    <div id="buttonSection" class="hidden">
       <div class="flex flex-col gap-2 mt-4">
         <button id="scanNextBtn" disabled class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Scan Next</button>
         <button id="submitBtn" disabled class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Submit List</button>

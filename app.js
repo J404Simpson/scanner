@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateViewState() {
-    const scannedSection = document.getElementById('scannedSection');
+    const buttonSection = document.getElementById('buttonSection');
     const hasScans = scannedCodes.length > 0;
 
     // Show Start button only if no scans exist and account is confirmed
@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = !hasScans;
 
     // Show/hide scanned table
-    scannedSection.classList.toggle('hidden', !hasScans);
+    buttonSection.classList.toggle('hidden', !hasScans);
   }
 
   function startScan() {
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Hide main views, show confirmation
-    tableView.classList.add('hidden');
+    tableSection.classList.add('hidden');
     scanningView.classList.add('hidden');
     confirmationView.classList.remove('hidden');
 
