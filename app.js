@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="#">${index + 1}</td>
         <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
         <td data-label="Expiry Date">${formatDate(item.cr5bd_expirydate)}</td>
-        <td data-label="Quantity in Stock">${item.cr5bd_quantity || 0}</td>
+        <td data-label="Quantity">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
       `;
 
@@ -287,14 +287,14 @@ document.addEventListener('DOMContentLoaded', () => {
         item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
       );
 
-      const quantityInStock = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+      const quantity = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
 
       const row = document.createElement('tr');
       row.innerHTML = `
         <td data-label="#">${itemTableBody.children.length + 1}</td>
         <td data-label="Lot Number">${scannedLot}</td>
         <td data-label="Expiry Date">${parsed.expiry || ''}</td>
-        <td data-label="Quantity in Stock">${quantityInStock}</td>
+        <td data-label="Quantity">${quantity}</td>
         <td data-label="Count">1</td>
       `;
 
@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lot: row.querySelector('[data-label="Lot Number"]').textContent.trim(),
       expiry: row.querySelector('[data-label="Expiry Date"]').textContent.trim(),
       count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0,
-      quantityInStock: parseInt(row.querySelector('[data-label="Quantity in Stock"]').textContent.trim(), 10) || 0
+      quantity: parseInt(row.querySelector('[data-label="Quantity"]').textContent.trim(), 10) || 0
     }));
 
     if (codes.length === 0) {
