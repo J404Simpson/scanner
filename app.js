@@ -209,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function startScan() {
     scanningView.classList.remove('hidden');
     tableView.classList.add('hidden');
-
     output.textContent = '📡 Scanning...';
     scanNextBtn.disabled = true;
 
@@ -217,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lastScannedCode = null;
 
     const deviceId = devices[currentDeviceIndex].deviceId;
+
     const constraints = {
       video: {
         deviceId: { exact: deviceId },
@@ -226,112 +226,74 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-      videoElement.srcObject = stream;
-      videoElement.play();
+    // Preprocessing function
+    function preprocessFrame(video, format) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      let running = true;
-      let consecutiveCount = 0;
-      let lastCandidate = null;
-      const roi = { x: 0.2, y: 0.2, w: 0.6, h: 0.6 }; // central square ROI
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
 
-      function preprocessCanvas(canvas) {
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        let min = 255, max = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        let v = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]; // grayscale
 
-        // Grayscale and find min/max
-        for (let i = 0; i < data.length; i += 4) {
-          const v = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-          data[i] = data[i + 1] = data[i + 2] = v;
-          if (v < min) min = v;
-          if (v > max) max = v;
+        // If CODE_128, apply strong threshold for black/white
+        if (format === ZXing.BarcodeFormat.CODE_128) {
+          v = v > 127 ? 255 : 0; // simple threshold
         }
 
-        const range = Math.max(1, max - min);
-
-        // Stretch contrast
-        for (let i = 0; i < data.length; i += 4) {
-          let v = data[i];
-          v = ((v - min) * 255) / range;
-          data[i] = data[i + 1] = data[i + 2] = v;
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-        return canvas;
+        data[i] = data[i + 1] = data[i + 2] = v;
       }
 
-      function getCroppedCanvas() {
-        const vw = videoElement.videoWidth;
-        const vh = videoElement.videoHeight;
-        const sx = Math.round(vw * roi.x);
-        const sy = Math.round(vh * roi.y);
-        const sw = Math.round(vw * roi.w);
-        const sh = Math.round(vh * roi.h);
+      ctx.putImageData(imageData, 0, 0);
+      return canvas;
+    }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = sw;
-        canvas.height = sh;
-        canvas.getContext('2d').drawImage(videoElement, sx, sy, sw, sh, 0, 0, sw, sh);
-        return preprocessCanvas(canvas);
-      }
+    codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
+      if (result && !scanCooldown) {
+        scanCooldown = true;
+        setTimeout(() => (scanCooldown = false), 1000);
 
-      async function scanLoop() {
-        if (!running) return;
+        const format = result.getBarcodeFormat();
+        let code = result.getText().replace(/[\x00-\x1F]/g, '');
 
-        const canvas = getCroppedCanvas();
-        try {
-          const luminance = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-          const binary = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
-          const result = codeReader.decode(binary);
-          const code = result.getText().replace(/[\x00-\x1F]/g, '');
-          const format = result.getBarcodeFormat();
-
-          // Skip non-GS1 CODE_128
-          if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-            output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-            scanNextBtn.disabled = false;
-            requestAnimationFrame(scanLoop);
-            return;
-          }
-
-          // Multi-frame confirmation
-          if (code === lastCandidate) {
-            consecutiveCount++;
-          } else {
-            lastCandidate = code;
-            consecutiveCount = 1;
-          }
-
-          if (consecutiveCount >= 2) { // require 2 consecutive frames
-            running = false;
-            let entry = { code, format, count: 1 };
-            scannedCodes.push(entry);
-            addToTable(scannedCodes.length, entry);
-
-            lastScannedCode = code;
-            scanningView.classList.add('hidden');
-            tableView.classList.remove('hidden');
-            scanNextBtn.disabled = false;
-            updateViewState();
-            return;
-          }
-
-        } catch (err) {
-          if (!(err instanceof ZXing.NotFoundException)) {
-            console.error('Scan error:', err);
+        // Apply preprocessing for CODE_128 only
+        if (format === ZXing.BarcodeFormat.CODE_128) {
+          const canvas = preprocessFrame(videoElement, format);
+          try {
+            // Decode again using preprocessed canvas
+            const luminance = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+            const binary = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+            const newResult = codeReader.decode(binary);
+            code = newResult.getText().replace(/[\x00-\x1F]/g, '');
+          } catch (e) {
+            console.warn('CODE_128 preprocessing decode failed:', e);
           }
         }
 
-        requestAnimationFrame(scanLoop);
+        // Skip non-GS1 CODE_128
+        if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+          output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+          scanNextBtn.disabled = false;
+          return;
+        }
+
+        const entry = { code, format, count: 1 };
+        scannedCodes.push(entry);
+        addToTable(scannedCodes.length, entry);
+
+        lastScannedCode = code;
+        scanningView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        scanNextBtn.disabled = false;
+        updateViewState();
+      } else if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error('Scan error:', err);
+        output.textContent = '⚠️ Scan error.';
       }
-
-      scanLoop();
-
-    }).catch(err => {
-      output.textContent = `❌ Camera error: ${err.message || err}`;
-      console.error(err);
     });
   }
 
