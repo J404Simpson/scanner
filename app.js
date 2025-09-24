@@ -218,34 +218,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const deviceId = devices[currentDeviceIndex].deviceId;
 
-    codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-        if (result && !scanCooldown) {
-            scanCooldown = true;
-            setTimeout(() => (scanCooldown = false), 1000); // 1-second lockout
+    const constraints = {
+      video: {
+        deviceId: { exact: deviceId },
+        facingMode: "environment",
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      }
+    };
 
-            let code = result.getText().replace(/[\x00-\x1F]/g, '');
-            const format = result.getBarcodeFormat();
+    codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
+      if (result && !scanCooldown) {
+        scanCooldown = true;
+        setTimeout(() => (scanCooldown = false), 1000);
 
-            if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-                output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-                scanNextBtn.disabled = false;
-                return;
-            }
+        let code = result.getText().replace(/[\x00-\x1F]/g, '');
+        const format = result.getBarcodeFormat();
 
-            const entry = { code, format, count: 1 };
-            scannedCodes.push(entry);
-            addToTable(scannedCodes.length, entry);
-
-            lastScannedCode = code;
-            scanningView.classList.add('hidden');
-            tableView.classList.remove('hidden');
-            scanNextBtn.disabled = false;
-
-            updateViewState();
-        } else if (err && !(err instanceof ZXing.NotFoundException)) {
-            output.textContent = '⚠️ Scan error.';
-            console.error('Scan error:', err);
+        if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
+          output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+          scanNextBtn.disabled = false;
+          return;
         }
+
+        const entry = { code, format, count: 1 };
+        scannedCodes.push(entry);
+        addToTable(scannedCodes.length, entry);
+
+        lastScannedCode = code;
+        scanningView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        scanNextBtn.disabled = false;
+
+        updateViewState();
+      } else if (err && !(err instanceof ZXing.NotFoundException)) {
+        output.textContent = '⚠️ Scan error.';
+        console.error('Scan error:', err);
+      }
     });
   }
 
@@ -378,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return result;
   }
 
-  // Check code is GS1
   function isLikelyGS1(code) {
     return /^01\d{14}/.test(code);
   }
