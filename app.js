@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const videoElement = document.getElementById('video');
   const output = document.getElementById('output');
   const scanningView = document.getElementById('scanningView');
@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const buttonSection = document.getElementById('buttonSection');
   const verifyAccountBtn = document.getElementById('verifyAccountBtn');
   const startBtn = document.getElementById('startBtn');
-  // const switchCameraBtn = document.getElementById('switchCameraBtn');
   const cancelScanBtn = document.getElementById('cancelScanBtn');
   const scanNextBtn = document.getElementById('scanNextBtn');
   const submitBtn = document.getElementById('submitBtn');
@@ -17,29 +16,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelSubmitBtn = document.getElementById('cancelSubmitBtn');
   const itemTableBody = document.querySelector('#itemTable tbody');
 
-  const hints = new Map();
-  const formats = [
-    ZXing.BarcodeFormat.CODE_128,
-    ZXing.BarcodeFormat.DATA_MATRIX
-  ];
-
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-
-  const codeReader = new ZXing.BrowserMultiFormatReader(hints);
+  const licenseKey =
+  "YuT5rlNbPG/G6ambGvlsbP3VpF0fqw" +
+  "/iZ7kYfta7gwykzP4azGs3ylHcN9vh" +
+  "REtLhXq++veAuk/91ykG9vv5cAs1xN" +
+  "G/uuTgWVHAV1YfoHmOsoHATmbX9Ua9" +
+  "CcEFce70y8XyM3Zn7F6aMG4/0G9fpa" +
+  "aNt1IQuD/gJJ7vIDQ5h9caZX83xiZw" +
+  "1KdakhyhguUalHJffNzQD3BKb63Trp" +
+  "pedWotoyLrO892nxv/bsV4x+pyTBXz" +
+  "48LSawK2NHCN/MW/gj5NUbUkW0dohF" +
+  "x0l5UoET+TV5TkwvD84PhE77c6Qn98" +
+  "9he1PjqBbmIMR6/yzT212BPT9uxK4a" +
+  "x0L1iB2aeubA==\nU2NhbmJvdFNESw" +
+  "pzY2FubmVyLnZlcnlhbm1lZC5jb218" +
+  "dmVyeWFubWVkLmNvbQoxNzYyNDczNT" +
+  "k5CjU5MAo4\n";
 
   const scannedCodes = [];
+  let scanbotSDK = null;
+  let barcodeScanner = null;
 
   let currentDeviceId = null;
   let lastScannedCode = null;
   let confirmedAccount = null;
   let confirmedAccountName = null;
+  let confirmedWarehouseCode = null;
   let scanCooldown = false;
   let consignmentItems = [];
-  let devices = [];
-  let currentDeviceIndex = 0;
 
+  // ✅ Initialize Scanbot SDK
+  async function initScanbot() {
+    try {
+      scanbotSDK = await ScanbotSDK.initialize({
+        licenseKey: licenseKey,
+        engine: 'WebAssembly',
+      });
+      console.log('✅ Scanbot SDK initialized:', scanbotSDK.isReady);
+    } catch (err) {
+      console.error('❌ Failed to initialize Scanbot SDK:', err);
+      output.textContent = '❌ Failed to initialize scanner.';
+    }
+  }
+
+  await initScanbot();
   updateViewState();
-  initCameras();
 
   async function verifyAccountNumber() {
     const input = document.getElementById('accountInput');
@@ -60,30 +81,23 @@ document.addEventListener('DOMContentLoaded', () => {
         `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/account?number=${encodeURIComponent(accountNumber)}`
       );
       const data = await res.json();
-      console.log("📦 Account API response:", data);
 
-      // ✅ Handle 404 (Account not found)
       if (res.status === 404) {
         status.textContent = `❌ No account found for ${accountNumber}`;
         status.style.color = 'red';
         return;
       }
-
-      // ✅ Handle 422 (Account exists but missing data)
       if (res.status === 422) {
         status.textContent = `⚠ Account found but missing required fields. Please contact support.`;
         status.style.color = 'darkorange';
         return;
       }
-
-      // ✅ Handle server errors
       if (res.status >= 500) {
         status.textContent = '❌ Server error. Please try again later.';
         status.style.color = 'red';
         return;
       }
 
-      // ✅ Success → Display confirmation buttons
       status.innerHTML = `
         ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>
         Is this correct? 
@@ -92,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       status.style.color = 'green';
 
-      // ✅ Attach event listeners AFTER innerHTML is updated
       const confirmBtn = status.querySelector('#confirmAccountBtn');
       const rejectBtn = status.querySelector('#rejectAccountBtn');
 
@@ -101,18 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmedAccountName = data.name;
         confirmedWarehouseCode = data.warehouseCode;
 
-        // Show loading while fetching items
         output.textContent = '📦 Loading consignment items...';
 
         try {
           await fetchConsignmentItems(data.warehouseCode);
-
-          // After fetch completes, populate the table
           populateConsignmentTable();
 
-          // Hide account section and show table view
-          document.getElementById('accountSection').classList.add('hidden');
-          document.getElementById('tableView').classList.remove('hidden');
+          accountSection.classList.add('hidden');
+          tableView.classList.remove('hidden');
 
           output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
           updateViewState();
@@ -120,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
           console.error("❌ Error fetching consignment items:", err);
           alert("Failed to load consignment data. Please try again.");
         }
-
       });
 
       rejectBtn.addEventListener('click', () => {
@@ -133,48 +141,25 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
     } catch (err) {
-        console.error('❌ Network/Server Error:', err);
-        status.textContent = '❌ Unable to connect. Please try again.';
-        status.style.color = 'red';
+      console.error('❌ Network/Server Error:', err);
+      status.textContent = '❌ Unable to connect. Please try again.';
+      status.style.color = 'red';
     }
   }
 
   async function fetchConsignmentItems(warehouseCode) {
-    try {
-      const res = await fetch(
-        `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
-      );
-
-      if (!res.ok) {
-        throw new Error(`Unable to fetch items for ${warehouseCode}, status ${res.status}`);
-        // console.warn(`⚠ Unable to fetch items for ${warehouseCode}`);
-        // consignmentItems = [];
-        // return;
-      }
-
-      const data = await res.json();
-      console.log("📦 Raw consignment API data:", data);
-
-      // Check if the API returns { items: [...] } or just [...]
-      consignmentItems = Array.isArray(data)
-      ? data
-      : (data.items || []);
-      console.log("✅ Processed consignment items:", consignmentItems);
-    } catch (err) {
-      console.error("❌ Failed to fetch consignment items:", err);
-      consignmentItems = [];
-      throw err;
-    }
+    const res = await fetch(
+      `https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/items?warehouseCode=${encodeURIComponent(warehouseCode)}`
+    );
+    if (!res.ok) throw new Error(`Unable to fetch items: ${res.status}`);
+    const data = await res.json();
+    consignmentItems = Array.isArray(data) ? data : (data.items || []);
   }
 
   function populateConsignmentTable() {
-    // Clear existing table
     itemTableBody.innerHTML = '';
-
-    // Add each consignment item as a row
     consignmentItems.forEach((item, index) => {
       const row = document.createElement('tr');
-
       row.innerHTML = `
         <td data-label="#">${index + 1}</td>
         <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
@@ -182,134 +167,73 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Quantity">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
       `;
-
       itemTableBody.appendChild(row);
     });
   }
 
   function updateViewState() {
-    const buttonSection = document.getElementById('buttonSection');
     const hasScans = scannedCodes.length > 0;
-
-    // Show Start button only if no scans exist and account is confirmed
     startBtn.classList.toggle('hidden', hasScans || !confirmedAccount);
     startBtn.disabled = !confirmedAccount;
-
-    // Show Scan Next only if there are scans
     scanNextBtn.classList.toggle('invisible', !hasScans);
     scanNextBtn.disabled = !hasScans;
-
-    // Enable Submit only if there are scans
     submitBtn.disabled = !hasScans;
-
-    // Show/hide submit button
     buttonSection.classList.toggle('hidden', !hasScans);
   }
 
-  function startScan() {
-    scanningView.classList.remove('hidden');
-    tableView.classList.add('hidden');
-    output.textContent = '📡 Scanning...';
-    scanNextBtn.disabled = true;
-
-    codeReader.reset();
-    lastScannedCode = null;
-
-    const deviceId = devices[currentDeviceIndex].deviceId;
-
-    const constraints = {
-      video: {
-        deviceId: { exact: deviceId },
-        facingMode: "environment",
-        width: { ideal: 640 },
-        height: { ideal: 480 }
-      }
-    };
-
-    // Preprocessing function
-    function preprocessFrame(video, format) {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        let v = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]; // grayscale
-
-        // If CODE_128, apply strong threshold for black/white
-        if (format === ZXing.BarcodeFormat.CODE_128) {
-          v = v > 127 ? 255 : 0; // simple threshold
-        }
-
-        data[i] = data[i + 1] = data[i + 2] = v;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      return canvas;
+  async function startScan() {
+    if (!scanbotSDK || !scanbotSDK.isReady) {
+      output.textContent = '❌ Scanbot SDK not ready.';
+      return;
     }
 
-    codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
-      if (result && !scanCooldown) {
-        scanCooldown = true;
-        setTimeout(() => (scanCooldown = false), 1000);
+    scanningView.classList.remove('hidden');
+    tableView.classList.add('hidden');
+    output.textContent = '📡 Starting Scanbot camera...';
+    scanNextBtn.disabled = true;
 
-        const format = result.getBarcodeFormat();
-        let code = result.getText().replace(/[\x00-\x1F]/g, '');
+    if (barcodeScanner) {
+      await barcodeScanner.dispose();
+      barcodeScanner = null;
+    }
 
-        // Apply preprocessing for CODE_128 only
-        if (format === ZXing.BarcodeFormat.CODE_128) {
-          const canvas = preprocessFrame(videoElement, format);
-          try {
-            // Decode again using preprocessed canvas
-            const luminance = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-            const binary = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
-            const newResult = codeReader.decode(binary);
-            code = newResult.getText().replace(/[\x00-\x1F]/g, '');
-          } catch (e) {
-            console.warn('CODE_128 preprocessing decode failed:', e);
-          }
-        }
-
-        // Skip non-GS1 CODE_128
-        if (format === ZXing.BarcodeFormat.CODE_128 && !isLikelyGS1(code)) {
-          output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-          scanNextBtn.disabled = false;
-          return;
-        }
-
-        const entry = { code, format, count: 1 };
-        scannedCodes.push(entry);
-        addToTable(scannedCodes.length, entry);
-
-        lastScannedCode = code;
-        scanningView.classList.add('hidden');
-        tableView.classList.remove('hidden');
-        scanNextBtn.disabled = false;
-        updateViewState();
-      } else if (err && !(err instanceof ZXing.NotFoundException)) {
-        console.error('Scan error:', err);
-        output.textContent = '⚠️ Scan error.';
-      }
+    barcodeScanner = await scanbotSDK.createBarcodeScanner({
+      container: '#video',
+      barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
+      onBarcodesDetected: onBarcodeDetected,
+      style: {
+        laser: { color: 'rgba(0,255,0,0.5)' },
+        finder: { color: 'rgba(0,255,0,0.3)' }
+      },
     });
   }
 
-  async function initCameras() {
-    devices = await codeReader.listVideoInputDevices();
-    if (devices.length === 0) {
-      output.textContent = '❌ No camera found.';
+  async function onBarcodeDetected(result) {
+    if (!result || result.length === 0 || scanCooldown) return;
+    scanCooldown = true;
+    setTimeout(() => (scanCooldown = false), 1000);
+
+    const barcode = result[0];
+    const code = barcode.text.trim();
+    const format = barcode.format;
+
+    if (format === 'CODE_128' && !isLikelyGS1(code)) {
+      output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+      scanNextBtn.disabled = false;
       return;
     }
-    // Start with the rear-facing camera if available
-    const backCamIndex = devices.findIndex(d =>
-      d.label.toLowerCase().includes('back') ||
-      d.label.toLowerCase().includes('rear') ||
-      d.label.toLowerCase().includes('environment')
-    );
-    currentDeviceIndex = backCamIndex !== -1 ? backCamIndex : 0;
+
+    const entry = { code, format, count: 1 };
+    scannedCodes.push(entry);
+    addToTable(scannedCodes.length, entry);
+
+    lastScannedCode = code;
+    scanningView.classList.add('hidden');
+    tableView.classList.remove('hidden');
+    scanNextBtn.disabled = false;
+    updateViewState();
+
+    await barcodeScanner.dispose();
   }
 
   function addToTable(index, entry) {
@@ -319,22 +243,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const scannedLot = parsed.lot || '';
 
-    // 🔍 Check if lot already exists in the items table
     const existingRow = Array.from(itemTableBody.querySelectorAll('tr'))
-      .find(row => row.cells[1]?.textContent.trim().toUpperCase() === scannedLot.trim(). toUpperCase());
+      .find(row => row.cells[1]?.textContent.trim().toUpperCase() === scannedLot.trim().toUpperCase());
 
     if (existingRow) {
-      // ✅ Increment the Count column (5th column = index 4)
       const countCell = existingRow.cells[4];
       countCell.textContent = Number(countCell.textContent) + 1;
       output.textContent = `➕ Incremented count for Lot #${scannedLot}`;
     } else {
-      // ❌ No existing row → Add a new one
       const matchedItem = consignmentItems.find(item =>
         item.cr5bd_lotnumber &&
         item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
       );
-
       const quantity = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
 
       const row = document.createElement('tr');
@@ -345,143 +265,76 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Quantity">${quantity}</td>
         <td data-label="Count">1</td>
       `;
-
       itemTableBody.appendChild(row);
 
       output.textContent = `✅ Added new lot #${scannedLot}`;
     }
-
     output.style.color = 'green';
   }
 
   function parseGS1(code, format) {
-    const result = {
-      code: code.replace(/[\x00-\x1F]/g, '')  // Check again for control characters like FNC1
-    };
-
-    // If the format is CODE_128 and it's a GS1 format, parse with AI logic
-    if (format === ZXing.BarcodeFormat.CODE_128) {
-      // Replace non-printable ASCII characters (usually FNC1 = ASCII 29)
+    const result = { code: code.replace(/[\x00-\x1F]/g, '') };
+    if (format === 'CODE_128') {
       const fnc1 = String.fromCharCode(29);
-
       let i = 0;
       while (i < code.length) {
         const ai2 = code.substr(i, 2);
         const ai3 = code.substr(i, 3);
         let ai = null;
-
-        // Try 3-digit AI first
-        if (['240', '241'].includes(ai3)) {
-          ai = ai3;
-          i += 3;
-        } else if (['00', '01', '10', '11', '17', '21'].includes(ai2)) {
-          ai = ai2;
-          i += 2;
-        } else {
-          console.warn('Unknown AI at position', i, code.substr(i, 4));
-          break;
-        }
-
+        if (['240', '241'].includes(ai3)) { ai = ai3; i += 3; }
+        else if (['00', '01', '10', '11', '17', '21'].includes(ai2)) { ai = ai2; i += 2; }
+        else break;
         let value;
-        if (['00'].includes(ai)) {
-          value = code.substr(i, 18); i += 18;
-        } else if (['01'].includes(ai)) {
-          value = code.substr(i, 14); i += 14;
-        } else if (['17', '11'].includes(ai)) {
-          value = code.substr(i, 6); i += 6;
-        } else if (['10', '21', '240', '241'].includes(ai)) {
-          // Variable length, ends with FNC1 or end of string
+        if (['00'].includes(ai)) { value = code.substr(i, 18); i += 18; }
+        else if (['01'].includes(ai)) { value = code.substr(i, 14); i += 14; }
+        else if (['17', '11'].includes(ai)) { value = code.substr(i, 6); i += 6; }
+        else if (['10', '21', '240', '241'].includes(ai)) {
           let end = code.indexOf(fnc1, i);
           if (end === -1) end = code.length;
           value = code.substring(i, end);
-          i = end + 1; // skip past separator
-        } else {
-          console.warn('Unhandled AI:', ai);
-          break;
-        }
-
+          i = end + 1;
+        } else break;
         switch (ai) {
           case '01': result.device = value; break;
-          case '17': result.expiry = `20${value.slice(0, 2)}-${value.slice(2, 4)}-${value.slice(4, 6)}`; break;
-          case '11': result.produced = `20${value.slice(0, 2)}-${value.slice(2, 4)}-${value.slice(4, 6)}`; break;
+          case '17': result.expiry = `20${value.slice(0,2)}-${value.slice(2,4)}-${value.slice(4,6)}`; break;
+          case '11': result.produced = `20${value.slice(0,2)}-${value.slice(2,4)}-${value.slice(4,6)}`; break;
           case '10': result.lot = value; break;
-          default:
-            result[`AI_${ai}`] = value;
+          default: result[`AI_${ai}`] = value;
         }
       }
-    }
-
-    // If the format is DATA_MATRIX, parse by fixed slices (your logic seems fine)
-    else if (format === ZXing.BarcodeFormat.DATA_MATRIX) {
-      if (code.charCodeAt(0) < 32) {
-        code = code.slice(1);
-      }
-
+    } else if (format === 'DATA_MATRIX') {
+      if (code.charCodeAt(0) < 32) code = code.slice(1);
       result.device = code.slice(0, 16);
       result.expiry = `20${code.slice(18, 20)}-${code.slice(20, 22)}-${code.slice(22, 24)}`;
       result.produced = `20${code.slice(26, 28)}-${code.slice(28, 30)}-${code.slice(30, 32)}`;
       result.lot = code.slice(34, 44);
     }
-
     return result;
   }
 
-  function isLikelyGS1(code) {
-    return /^01\d{14}/.test(code);
-  }
+  function isLikelyGS1(code) { return /^01\d{14}/.test(code); }
 
   function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0]; // ✅ gives "YYYY-MM-DD"
+    return date.toISOString().split('T')[0];
   }
 
   verifyAccountBtn.addEventListener('click', verifyAccountNumber);
 
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
     if (!confirmedAccount) {
       output.textContent = '⚠️ Please confirm the account before scanning.';
       return;
     }
-
-    // Hide the table view
-    document.getElementById('tableView').classList.add('hidden');
-
-    // Show the scanning view
-    document.getElementById('scanningView').classList.remove('hidden');
-
-    // Update status
+    tableView.classList.add('hidden');
+    scanningView.classList.remove('hidden');
     output.textContent = '📷 Initializing camera...';
-
-    // Start scanning
-    codeReader.listVideoInputDevices().then(devices => {
-      if (devices.length === 0) {
-        output.textContent = '❌ No camera found.';
-        return;
-      }
-      currentDeviceId = devices[0].deviceId;
-      startScan();
-    }).catch(err => {
-      output.textContent = `❌ Camera error: ${err.message || err}`;
-      console.error(err);
-    });
+    await startScan();
   });
-  
-  // switchCameraBtn.addEventListener('click', () => {
-  //   if (!devices.length) return;
 
-  //   // Move to next camera
-  //   currentDeviceIndex = (currentDeviceIndex + 1) % devices.length;
-
-  //   // Update the currentDeviceId
-  //   currentDeviceId = devices[currentDeviceIndex].deviceId;
-
-  //   // Restart scanning with new camera
-  //   startScan();
-  // });
-
-  cancelScanBtn.addEventListener('click', () => {
-    codeReader.reset();
+  cancelScanBtn.addEventListener('click', async () => {
+    if (barcodeScanner) await barcodeScanner.dispose();
     scanningView.classList.add('hidden');
     tableView.classList.remove('hidden');
     output.textContent = '✅ Scan cancelled.';
@@ -510,35 +363,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Store payload for later submission
     window.pendingSubmission = {
       account: confirmedAccount,
       accountName: confirmedAccountName,
       codes
     };
 
-    // Hide main views, show confirmation
     tableSection.classList.add('hidden');
     tableView.classList.add('hidden');
     scanningView.classList.add('hidden');
     confirmationView.classList.remove('hidden');
-
-    output.textContent = ''; // Clear previous messages
+    output.textContent = '';
   });
 
   confirmSubmitBtn.addEventListener('click', async () => {
     if (!window.pendingSubmission) return;
-
-    // Hide everything
     confirmationView.classList.add('hidden');
     tableView.classList.add('hidden');
     scanningView.classList.add('hidden');
     accountSection.classList.add('hidden');
 
-    // Show submitting message in the result view
     submissionResultView.classList.remove('hidden');
     submissionMessage.textContent = '📤 Submitting...';
-    submissionMessage.classList.remove('text-red-600');
     submissionMessage.classList.add('text-green-600');
 
     try {
@@ -550,14 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(window.pendingSubmission)
         }
       );
-
       const data = await res.json();
-
       if (res.ok) {
-        // ✅ Only show confirmation message
         submissionMessage.textContent = '✅ Table submitted successfully!';
-        
-        // Clear all data
         itemTableBody.innerHTML = '';
         scannedCodes.length = 0;
         confirmedAccount = null;
