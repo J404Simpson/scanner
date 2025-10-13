@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const scanningView = document.getElementById('scanningView');
   const tableView = document.getElementById('tableView');
   const confirmationView = document.getElementById('confirmationView');
+  const submissionResultView = document.getElementById('submissionResultView');
+  const submissionMessage = document.getElementById('submissionMessage');
   const accountSection = document.getElementById('accountSection');
   const tableSection = document.getElementById('tableSection');
   const buttonSection = document.getElementById('buttonSection');
@@ -50,9 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       scanbotSDK = await ScanbotSDK.initialize({
         licenseKey: licenseKey,
-        engine: '/scanbot-web-sdk/bundle/bin/barcode-scanner/',
+        engine: 'wasm',
+        onInitialize: () => console.log('✅ Scanbot SDK initialized!'),
+        onInitializeError: (error) => console.error('❌ Init failed:', error)
       });
-      console.log('✅ Scanbot SDK initialized:', scanbotSDK.isReady);
+      console.log('✅ Scanbot SDK ready:', scanbotSDK.isReady);
     } catch (err) {
       console.error('❌ Failed to initialize Scanbot SDK:', err);
       output.textContent = '❌ Failed to initialize scanner.';
