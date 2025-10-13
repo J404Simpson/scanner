@@ -17,21 +17,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const itemTableBody = document.querySelector('#itemTable tbody');
 
   const licenseKey =
-  "YuT5rlNbPG/G6ambGvlsbP3VpF0fqw" +
-  "/iZ7kYfta7gwykzP4azGs3ylHcN9vh" +
-  "REtLhXq++veAuk/91ykG9vv5cAs1xN" +
-  "G/uuTgWVHAV1YfoHmOsoHATmbX9Ua9" +
-  "CcEFce70y8XyM3Zn7F6aMG4/0G9fpa" +
-  "aNt1IQuD/gJJ7vIDQ5h9caZX83xiZw" +
-  "1KdakhyhguUalHJffNzQD3BKb63Trp" +
-  "pedWotoyLrO892nxv/bsV4x+pyTBXz" +
-  "48LSawK2NHCN/MW/gj5NUbUkW0dohF" +
-  "x0l5UoET+TV5TkwvD84PhE77c6Qn98" +
-  "9he1PjqBbmIMR6/yzT212BPT9uxK4a" +
-  "x0L1iB2aeubA==\nU2NhbmJvdFNESw" +
-  "pzY2FubmVyLnZlcnlhbm1lZC5jb218" +
-  "dmVyeWFubWVkLmNvbQoxNzYyNDczNT" +
-  "k5CjU5MAo4\n";
+  "fS1e2s+IvkOlukoEWUQbnKK89hDDfW" +
+  "Jp/x1hDCB1mKDzf0CDjl+9/uSSNCsj" +
+  "C4hwaas4foFNvxvJKmFFpgkTbVzDrn" +
+  "XXhSRcsTSj4mC2F+2oJS9Y6oGG2muF" +
+  "L5R8j/Ofd1LYABfJkXqI+vp/RoUqzW" +
+  "GjaUVnRRyfnEoD1qg2UacEdLz8bGFo" +
+  "wNIBjWvwOu/KWMnnggSSmxDClvoRKL" +
+  "0QlTIDC3CYH/SG4/e1vNGH7uQem3pN" +
+  "HTSRKE3tD9ptadrXJ5SQN48F2cmZ9x" +
+  "pyjjK5BLZ310QP9kyMxHa0QTiRp0F3" +
+  "IdtaFQ3HBGdt+yDFxTA/BZt0vUCzfe" +
+  "57wDKjseB0mA==\nU2NhbmJvdFNESw" +
+  "psb2NhbGhvc3R8c2Nhbm5lci52ZXJ5" +
+  "YW5tZWQuY29tfHZlcnlhbm1lZC5jb2" +
+  "0KMTc2Mjk5MTk5OQo1MTIKOA==\n";
 
   const scannedCodes = [];
   let scanbotSDK = null;
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       scanbotSDK = await ScanbotSDK.initialize({
         licenseKey: licenseKey,
-        engine: 'WebAssembly',
+        engine: '/scanbot-web-sdk/bundle/bin/barcode-scanner/',
       });
       console.log('✅ Scanbot SDK initialized:', scanbotSDK.isReady);
     } catch (err) {
