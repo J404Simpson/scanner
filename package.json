@@ -1,5 +1,5 @@
 {
-  "name": "inventory-scanner",
+  "name": "scanner",
   "version": "1.0.0",
   "description": "Static web app for scanning inventory using Scanbot SDK",
   "dependencies": {
