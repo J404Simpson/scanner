@@ -1,3 +1,2 @@
-/wasm/ScanbotSDK.min.js
-/wasm/ScanbotSDK.Asm.wasm
-/wasm/ScanbotSDK.Asm.data
+# All node_modules
+node_modules/
