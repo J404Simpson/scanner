@@ -6,7 +6,8 @@
     "scanbot-web-sdk": "^7.2.0"
   },
   "scripts": {
-    "build": "echo 'Static site — no build step required'"
+    "postinstall": "cp -R node_modules/scanbot-web-sdk/bundle/bin/barcode-scanner/* wasm/"
   }
 }
+
 
