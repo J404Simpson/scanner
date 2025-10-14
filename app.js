@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       scanbotSDK = await ScanbotSDK.initialize({
         licenseKey: licenseKey,
-        enginePath: './scanbot/bin/',
+        enginePath: './scanbot/bin/barcode-scanner/',
         onInitialize: () => console.log('✅ Scanbot SDK initialized!'),
         onInitializeError: (error) => console.error('❌ Init failed:', error)
       });
