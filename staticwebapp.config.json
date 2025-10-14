@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "route": "/vendor/*",
+      "serve": "/vendor/{*}"
+    }
+  ]
+}
