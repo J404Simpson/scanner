@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       scanbotSDK = await ScanbotSDK.initialize({
         licenseKey: licenseKey,
-        engine: './vendor/scanbot-web-sdk/bin/',
+        enginePath: './vendor/scanbot-web-sdk/bin/',
         onInitialize: () => console.log('✅ Scanbot SDK initialized!'),
         onInitializeError: (error) => console.error('❌ Init failed:', error)
       });
