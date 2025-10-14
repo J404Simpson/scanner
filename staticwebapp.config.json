@@ -1,10 +1,15 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html"
-  },
   "mimeTypes": {
-    ".js": "application/javascript",
-    ".wasm": "application/wasm"
-  }
+    ".wasm": "application/wasm",
+    ".js": "application/javascript"
+  },
+  "routes": [
+    {
+      "route": "/scanbot/*",
+      "serve": "/scanbot/{*}",
+      "statusCode": 200
+    }
+  ]
 }
+
 
