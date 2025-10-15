@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function startScan() {
     try {
-      if (!scanbotSDK || !scanbotSDK.isReady) {
+      if (!scanbotSDK) {
         output.textContent = '❌ Scanbot SDK not ready.';
         console.warn('Scanbot SDK not ready:', scanbotSDK);
         return;
