@@ -49,19 +49,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   let scanCooldown = false;
   let consignmentItems = [];
 
-  // ✅ Initialize Scanbot SDK
+  // Initialize Scanbot SDK
   async function initScanbot() {
     try {
       scanbotSDK = await ScanbotSDK.initialize({
         licenseKey: licenseKey,
         enginePath: '/wasm/',
-        onInitialize: () => console.log('✅ Scanbot SDK initialized!'),
-        onInitializeError: (error) => console.error('❌ Init failed:', error)
+        onInitialize: () => console.log('Scanbot SDK initialized!'),
+        onInitializeError: (error) => console.error('Init failed:', error)
       });
-      console.log('✅ Scanbot SDK ready:', scanbotSDK.isReady);
+      console.log('Scanbot SDK ready:', scanbotSDK.isReady);
     } catch (err) {
-      console.error('❌ Failed to initialize Scanbot SDK:', err);
-      output.textContent = '❌ Failed to initialize scanner.';
+      console.error('Failed to initialize Scanbot SDK:', err);
+      output.textContent = 'Failed to initialize scanner.';
     }
   }
 
@@ -74,12 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accountNumber = input.value.trim();
 
     if (!accountNumber) {
-      status.textContent = '⚠ Please enter an account number.';
+      status.textContent = 'Please enter an account number.';
       status.style.color = 'red';
       return;
     }
 
-    status.textContent = '🔍 Looking up account...';
+    status.textContent = 'Looking up account...';
     status.style.color = 'blue';
 
     try {
@@ -89,23 +89,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
 
       if (res.status === 404) {
-        status.textContent = `❌ No account found for ${accountNumber}`;
+        status.textContent = `No account found for ${accountNumber}`;
         status.style.color = 'red';
         return;
       }
       if (res.status === 422) {
-        status.textContent = `⚠ Account found but missing required fields. Please contact support.`;
+        status.textContent = `Account found but missing required fields. Please contact support.`;
         status.style.color = 'darkorange';
         return;
       }
       if (res.status >= 500) {
-        status.textContent = '❌ Server error. Please try again later.';
+        status.textContent = 'Server error. Please try again later.';
         status.style.color = 'red';
         return;
       }
 
       status.innerHTML = `
-        ✅ Found: ${data.name} <br/>📦 Warehouse: ${data.warehouseCode} <br/>
+        Found: ${data.name} <br/>Warehouse: ${data.warehouseCode} <br/>
         Is this correct? 
         <button id="confirmAccountBtn" class="bg-green-600 text-white px-3 py-1 rounded ml-2">Yes</button>
         <button id="rejectAccountBtn" class="bg-red-600 text-white px-3 py-1 rounded ml-2">No</button>
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         confirmedAccountName = data.name;
         confirmedWarehouseCode = data.warehouseCode;
 
-        output.textContent = '📦 Loading consignment items...';
+        output.textContent = 'Loading consignment items...';
 
         try {
           await fetchConsignmentItems(data.warehouseCode);
@@ -129,10 +129,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           accountSection.classList.add('hidden');
           tableView.classList.remove('hidden');
 
-          output.textContent = `✅ Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
+          output.textContent = `Confirmed: ${data.name} (Warehouse: ${data.warehouseCode})`;
           updateViewState();
         } catch (err) {
-          console.error("❌ Error fetching consignment items:", err);
+          console.error("Error fetching consignment items:", err);
           alert("Failed to load consignment data. Please try again.");
         }
       });
@@ -142,13 +142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         confirmedAccountName = null;
         confirmedWarehouseCode = null;
         input.value = '';
-        status.textContent = '⚠ Please enter the correct account number.';
+        status.textContent = 'Please enter the correct account number.';
         status.style.color = 'darkorange';
       });
 
     } catch (err) {
-      console.error('❌ Network/Server Error:', err);
-      status.textContent = '❌ Unable to connect. Please try again.';
+      console.error('Network/Server Error:', err);
+      status.textContent = 'Unable to connect. Please try again.';
       status.style.color = 'red';
     }
   }
@@ -190,13 +190,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function startScan() {
     try {
       if (!scanbotSDK) {
-        output.textContent = '❌ Scanbot SDK not ready.';
+        output.textContent = 'Scanbot SDK not ready.';
         return;
       }
 
       scanningView.classList.remove('hidden');
       tableView.classList.add('hidden');
-      output.textContent = '📡 Starting Scanbot camera...';
+      output.textContent = 'Starting Scanbot camera...';
       scanNextBtn.disabled = true;
 
       if (barcodeScannerController) {
@@ -215,18 +215,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       ];
 
       barcodeScannerController.props.onDetected = async (result) => {
-        console.log('🔍 SDK onDetected fired:', result);
+        console.log('SDK onDetected fired:', result);
         if (result.barcodes && result.barcodes.length > 0) {
           await onBarcodeDetected(result.barcodes);
         }
       };
 
       await barcodeScannerController.show();
-      console.log('✅ Barcode scanner controller ready:', barcodeScannerController);
+      console.log('Barcode scanner controller ready:', barcodeScannerController);
 
     } catch (err) {
-      console.error('❌ Error while starting scanner:', err);
-      output.textContent = '❌ Unable to start scanner. See console.';
+      console.error('Error while starting scanner:', err);
+      output.textContent = 'Unable to start scanner. See console.';
       scanningView.classList.add('hidden');
       tableView.classList.remove('hidden');
       scanNextBtn.disabled = false;
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function onBarcodeDetected(result) {
-    console.log("🔍 Raw detection result:", result);
+    console.log("Raw detection result:", result);
     if (!result || result.length === 0) {
       console.log('No barcodes in result:', result);
       return;
@@ -254,13 +254,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Detected barcode:', { code, format, raw: barcode });
 
     if (!code) {
-      output.textContent = '⚠️ Empty barcode read, skipping.';
+      output.textContent = 'Empty barcode read, skipping.';
       scanNextBtn.disabled = false;
       return;
     }
 
     // if (format === 'CODE_128' && !isLikelyGS1(code)) {
-    //   output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+    //   output.textContent = `Skipped non-GS1 CODE_128: ${code}`;
     //   scanNextBtn.disabled = false;
     //   return;
     // }
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (existingRow) {
       const countCell = existingRow.cells[4];
       countCell.textContent = Number(countCell.textContent) + 1;
-      output.textContent = `➕ Incremented count for Lot #${scannedLot}`;
+      output.textContent = `Incremented count for Lot #${scannedLot}`;
     } else {
       const matchedItem = consignmentItems.find(item =>
         item.cr5bd_lotnumber &&
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       itemTableBody.appendChild(row);
 
-      output.textContent = `✅ Added new lot #${scannedLot}`;
+      output.textContent = `Added new lot #${scannedLot}`;
     }
     output.style.color = 'green';
   }
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   startBtn.addEventListener('click', async () => {
     if (!confirmedAccount) {
-      output.textContent = '⚠️ Please confirm the account before scanning.';
+      output.textContent = 'Please confirm the account before scanning.';
       return;
     }
     tableView.classList.add('hidden');
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (barcodeScanner) await barcodeScanner.dispose();
     scanningView.classList.add('hidden');
     tableView.classList.remove('hidden');
-    output.textContent = '✅ Scan cancelled.';
+    output.textContent = 'Scan cancelled.';
     scanCooldown = false;
     updateViewState();
   });
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   submitBtn.addEventListener('click', () => {
     if (!confirmedAccount) {
-      output.textContent = '⚠ Missing account';
+      output.textContent = 'Missing account';
       return;
     }
 
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }));
 
     if (codes.length === 0) {
-      output.textContent = '⚠ No scanned items to submit';
+      output.textContent = 'No scanned items to submit';
       return;
     }
 
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     accountSection.classList.add('hidden');
 
     submissionResultView.classList.remove('hidden');
-    submissionMessage.textContent = '📤 Submitting...';
+    submissionMessage.textContent = 'Submitting...';
     submissionMessage.classList.add('text-green-600');
 
     try {
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
       const data = await res.json();
       if (res.ok) {
-        submissionMessage.textContent = '✅ Table submitted successfully!';
+        submissionMessage.textContent = 'Table submitted successfully!';
         itemTableBody.innerHTML = '';
         scannedCodes.length = 0;
         confirmedAccount = null;
@@ -456,11 +456,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         confirmedWarehouseCode = null;
         window.pendingSubmission = null;
       } else {
-        submissionMessage.textContent = '❌ Failed to submit table';
+        submissionMessage.textContent = 'Failed to submit table';
         console.error('Flow error:', data);
       }
     } catch (err) {
-      submissionMessage.textContent = '❌ Network error triggering flow';
+      submissionMessage.textContent = 'Network error triggering flow';
       console.error(err);
     }
   });
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   cancelSubmitBtn.addEventListener('click', () => {
     confirmationView.classList.add('hidden');
     tableView.classList.remove('hidden');
-    output.textContent = '⚠ Submission cancelled';
+    output.textContent = 'Submission cancelled';
     window.pendingSubmission = null;
   });
 
