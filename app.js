@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let scanbotSDK = null;
   let barcodeScanner = null;
 
+  let barcodeScannerController = null;
+
   let currentDeviceId = null;
   let lastScannedCode = null;
   let confirmedAccount = null;
@@ -189,7 +191,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (!scanbotSDK) {
         output.textContent = '❌ Scanbot SDK not ready.';
-        console.warn('Scanbot SDK not ready:', scanbotSDK);
         return;
       }
 
@@ -198,41 +199,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       output.textContent = '📡 Starting Scanbot camera...';
       scanNextBtn.disabled = true;
 
-      await new Promise(r => requestAnimationFrame(r));
+      if (barcodeScannerController) {
+        await barcodeScannerController.close();
+        barcodeScannerController = null;
+      }
 
-      // if (barcodeScanner) {
-      //   try {
-      //     await barcodeScanner.dispose();
-      //   } catch (e) {
-      //     console.warn('Error disposing previous scanner:', e);
-      //   }
-      //   barcodeScanner = null;
-      // }
+      barcodeScannerController = new BarcodeScannerController();
 
-      barcodeScanner = await scanbotSDK.createBarcodeScanner({
-        container: document.getElementById('video'),
-        barcodeFormatConfigurations: [
-          new ScanbotSDK.Config.BarcodeFormatCommonConfiguration({
-            formats: ['CODE_128', 'DATA_MATRIX'],
-          }),
-        ],
-        onDetected: (result) => {
-          console.log('🔍 SDK onDetected fired:', result);
-          onBarcodeDetected(result.barcodes);
-        },
-        style: {
-          laser: { color: 'rgba(0,255,0,0.5)' },
-          finder: { color: 'rgba(0,255,0,0.3)' }
-        },
-      });
-      console.log('Barcode scanner created:', barcodeScanner);
+      barcodeScannerController.props.container = videoElement;
 
-      await barcodeScanner.startDetection();
-      console.log('Detection started:', barcodeScanner.detectionRunning);
-            
+      barcodeScannerController.props.barcodeFormatConfigurations = [
+        new ScanbotSDK.Config.BarcodeFormatCommonConfiguration({
+          formats: ['CODE_128', 'DATA_MATRIX'],
+        }),
+      ];
+
+      barcodeScannerController.props.onDetected = async (result) => {
+        console.log('🔍 SDK onDetected fired:', result);
+        if (result.barcodes && result.barcodes.length > 0) {
+          await onBarcodeDetected(result.barcodes);
+        }
+      };
+
+      await barcodeScannerController.show();
+      console.log('✅ Barcode scanner controller ready:', barcodeScannerController);
+
     } catch (err) {
-      console.error('Error while starting scanner:', err);
-      output.textContent = '❌ Unable to start scanner. See console for details.';
+      console.error('❌ Error while starting scanner:', err);
+      output.textContent = '❌ Unable to start scanner. See console.';
       scanningView.classList.add('hidden');
       tableView.classList.remove('hidden');
       scanNextBtn.disabled = false;
