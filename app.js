@@ -209,7 +209,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       barcodeScanner = await scanbotSDK.createBarcodeScanner({
         container: document.getElementById('video'),
-        barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
+        barcodeFormatConfigurations: [
+          new ScanbotSDK.Config.BarcodeFormatCommonConfiguration({
+            formats: ['CODE_128', 'DATA_MATRIX'],
+          }),
+        ],
         onDetected: (result) => onBarcodeDetected(result.barcodes),
         style: {
           laser: { color: 'rgba(0,255,0,0.5)' },
