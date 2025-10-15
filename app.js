@@ -198,6 +198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       output.textContent = '📡 Starting Scanbot camera...';
       scanNextBtn.disabled = true;
 
+      await new Promise(r => requestAnimationFrame(r));
+
       // if (barcodeScanner) {
       //   try {
       //     await barcodeScanner.dispose();
