@@ -221,10 +221,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             onBarcodeDetected(result.barcodes);
           }
         },
-        finder: {
-          visible: true,
-          style: { _type: "FinderStrokedStyle", strokeColor: "green", strokeWidth: 3 }
-        },
+        // finder: {
+        //   visible: true,
+        //   style: { _type: "FinderStrokedStyle", strokeColor: "green", strokeWidth: 3 }
+        // },
         userGuidance: {
           visible: true,
           title: { text: "Scan item", color: "white" }
