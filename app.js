@@ -186,40 +186,73 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function startScan() {
-    if (!scanbotSDK || !scanbotSDK.isReady) {
-      output.textContent = '❌ Scanbot SDK not ready.';
-      return;
+    try {
+      if (!scanbotSDK || !scanbotSDK.isReady) {
+        output.textContent = '❌ Scanbot SDK not ready.';
+        console.warn('Scanbot SDK not ready:', scanbotSDK);
+        return;
+      }
+
+      scanningView.classList.remove('hidden');
+      tableView.classList.add('hidden');
+      output.textContent = '📡 Starting Scanbot camera...';
+      scanNextBtn.disabled = true;
+
+      if (barcodeScanner) {
+        try {
+          await barcodeScanner.dispose();
+        } catch (e) {
+          console.warn('Error disposing previous scanner:', e);
+        }
+        barcodeScanner = null;
+      }
+
+      barcodeScanner = await scanbotSDK.createBarcodeScanner({
+        container: '#video',
+        barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
+        onBarcodesDetected: (payload) => onBarcodeDetectedAdapter(payload),
+        onDetected: (payload) => onBarcodeDetectedAdapter(payload),
+        style: {
+          laser: { color: 'rgba(0,255,0,0.5)' },
+          finder: { color: 'rgba(0,255,0,0.3)' }
+        },
+      });
+
+      console.log('Barcode scanner created:', barcodeScanner);
+    } catch (err) {
+      console.error('Error while starting scanner:', err);
+      output.textContent = '❌ Unable to start scanner. See console for details.';
+      scanningView.classList.add('hidden');
+      tableView.classList.remove('hidden');
+      scanNextBtn.disabled = false;
     }
-
-    scanningView.classList.remove('hidden');
-    tableView.classList.add('hidden');
-    output.textContent = '📡 Starting Scanbot camera...';
-    scanNextBtn.disabled = true;
-
-    if (barcodeScanner) {
-      await barcodeScanner.dispose();
-      barcodeScanner = null;
-    }
-
-    barcodeScanner = await scanbotSDK.createBarcodeScanner({
-      container: '#video',
-      barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
-      onBarcodesDetected: onBarcodeDetected,
-      style: {
-        laser: { color: 'rgba(0,255,0,0.5)' },
-        finder: { color: 'rgba(0,255,0,0.3)' }
-      },
-    });
   }
 
   async function onBarcodeDetected(result) {
-    if (!result || result.length === 0 || scanCooldown) return;
+    // `result` is expected to be an array of barcode objects now
+    if (!result || result.length === 0) {
+      console.log('No barcodes in result:', result);
+      return;
+    }
+    if (scanCooldown) {
+      console.log('Scan cooldown, ignoring detection');
+      return;
+    }
+
     scanCooldown = true;
     setTimeout(() => (scanCooldown = false), 1000);
 
-    const barcode = result[0];
-    const code = barcode.text.trim();
-    const format = barcode.format;
+    const barcode = result[0]; // take the first
+    const code = (barcode.text || '').trim();
+    const format = barcode.format || barcode.symbology || '';
+
+    console.log('Detected barcode:', { code, format, raw: barcode });
+
+    if (!code) {
+      output.textContent = '⚠️ Empty barcode read, skipping.';
+      scanNextBtn.disabled = false;
+      return;
+    }
 
     if (format === 'CODE_128' && !isLikelyGS1(code)) {
       output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
@@ -237,7 +270,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanNextBtn.disabled = false;
     updateViewState();
 
-    await barcodeScanner.dispose();
+    // dispose the scanner after successful scan (your current flow does this)
+    try {
+      if (barcodeScanner) {
+        await barcodeScanner.dispose();
+        barcodeScanner = null; // <- important: clear the reference
+      }
+    } catch (e) {
+      console.warn('Error disposing scanner after detection:', e);
+      barcodeScanner = null;
+    }
   }
 
   function addToTable(index, entry) {
