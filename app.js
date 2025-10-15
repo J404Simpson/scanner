@@ -198,14 +198,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       output.textContent = '📡 Starting Scanbot camera...';
       scanNextBtn.disabled = true;
 
-      if (barcodeScanner) {
-        try {
-          await barcodeScanner.dispose();
-        } catch (e) {
-          console.warn('Error disposing previous scanner:', e);
-        }
-        barcodeScanner = null;
-      }
+      // if (barcodeScanner) {
+      //   try {
+      //     await barcodeScanner.dispose();
+      //   } catch (e) {
+      //     console.warn('Error disposing previous scanner:', e);
+      //   }
+      //   barcodeScanner = null;
+      // }
 
       barcodeScanner = await scanbotSDK.createBarcodeScanner({
         container: document.getElementById('video'),
@@ -214,7 +214,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             formats: ['CODE_128', 'DATA_MATRIX'],
           }),
         ],
-        onDetected: (result) => onBarcodeDetected(result.barcodes),
+        onDetected: (result) => {
+          console.log('🔍 SDK onDetected fired:', result);
+          onBarcodeDetected(result.barcodes);
+        },
         style: {
           laser: { color: 'rgba(0,255,0,0.5)' },
           finder: { color: 'rgba(0,255,0,0.3)' }
@@ -257,11 +260,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    if (format === 'CODE_128' && !isLikelyGS1(code)) {
-      output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
-      scanNextBtn.disabled = false;
-      return;
-    }
+    // if (format === 'CODE_128' && !isLikelyGS1(code)) {
+    //   output.textContent = `⚠️ Skipped non-GS1 CODE_128: ${code}`;
+    //   scanNextBtn.disabled = false;
+    //   return;
+    // }
 
     const entry = { code, format, count: 1 };
     scannedCodes.push(entry);
@@ -273,15 +276,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanNextBtn.disabled = false;
     updateViewState();
 
-    try {
-      if (barcodeScanner) {
-        await barcodeScanner.dispose();
-        barcodeScanner = null;
-      }
-    } catch (e) {
-      console.warn('Error disposing scanner after detection:', e);
-      barcodeScanner = null;
-    }
+    // try {
+    //   if (barcodeScanner) {
+    //     await barcodeScanner.dispose();
+    //     barcodeScanner = null;
+    //   }
+    // } catch (e) {
+    //   console.warn('Error disposing scanner after detection:', e);
+    //   barcodeScanner = null;
+    // }
   }
 
   function addToTable(index, entry) {
