@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             formats: ['CODE_128', 'DATA_MATRIX']
           }),
         ],
+        showFinder: false,
         onBarcodesDetected: (result) => {
           if (result.barcodes && result.barcodes.length > 0) {
             onBarcodeDetected(result.barcodes);
