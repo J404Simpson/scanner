@@ -210,8 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       barcodeScanner = await scanbotSDK.createBarcodeScanner({
         container: document.getElementById('video'),
         barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
-        onBarcodesDetected: (payload) => onBarcodeDetectedAdapter(payload),
-        onDetected: (payload) => onBarcodeDetectedAdapter(payload),
+        onDetected: (result) => onBarcodeDetected(result.barcodes),
         style: {
           laser: { color: 'rgba(0,255,0,0.5)' },
           finder: { color: 'rgba(0,255,0,0.3)' }
@@ -229,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function onBarcodeDetected(result) {
-    // `result` is expected to be an array of barcode objects now
+    console.log("🔍 Raw detection result:", result);
     if (!result || result.length === 0) {
       console.log('No barcodes in result:', result);
       return;
@@ -242,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanCooldown = true;
     setTimeout(() => (scanCooldown = false), 1000);
 
-    const barcode = result[0]; // take the first
+    const barcode = result[0];
     const code = (barcode.text || '').trim();
     const format = barcode.format || barcode.symbology || '';
 
@@ -270,11 +269,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanNextBtn.disabled = false;
     updateViewState();
 
-    // dispose the scanner after successful scan (your current flow does this)
     try {
       if (barcodeScanner) {
         await barcodeScanner.dispose();
-        barcodeScanner = null; // <- important: clear the reference
+        barcodeScanner = null;
       }
     } catch (e) {
       console.warn('Error disposing scanner after detection:', e);
