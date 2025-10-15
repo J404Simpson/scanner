@@ -199,30 +199,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       output.textContent = 'Starting Scanbot camera...';
       scanNextBtn.disabled = true;
 
-      if (barcodeScannerController) {
-        await barcodeScannerController.close();
-        barcodeScannerController = null;
+      if (barcodeScanner) {
+        try {
+          await barcodeScanner.dispose();
+        } catch (e) {
+          console.warn('Error disposing previous scanner:', e);
+        }
+        barcodeScanner = null;
       }
 
-      barcodeScannerController = new BarcodeScannerController();
-
-      barcodeScannerController.props.container = videoElement;
-
-      barcodeScannerController.props.barcodeFormatConfigurations = [
-        new ScanbotSDK.Config.BarcodeFormatCommonConfiguration({
-          formats: ['CODE_128', 'DATA_MATRIX'],
-        }),
-      ];
-
-      barcodeScannerController.props.onDetected = async (result) => {
-        console.log('SDK onDetected fired:', result);
-        if (result.barcodes && result.barcodes.length > 0) {
-          await onBarcodeDetected(result.barcodes);
+      const config = {
+        containerId: 'video',
+        barcodeFormatConfigurations: [
+          new ScanbotSDK.Config.BarcodeFormatCommonConfiguration({
+            formats: ['CODE_128', 'DATA_MATRIX']
+          }),
+        ],
+        onBarcodesDetected: (result) => {
+          if (result.barcodes && result.barcodes.length > 0) {
+            onBarcodeDetected(result.barcodes);
+          }
+        },
+        finder: {
+          visible: true,
+          style: { _type: "FinderStrokedStyle", strokeColor: "green", strokeWidth: 3 }
+        },
+        userGuidance: {
+          visible: true,
+          title: { text: "Scan item", color: "white" }
         }
       };
 
-      await barcodeScannerController.show();
-      console.log('Barcode scanner controller ready:', barcodeScannerController);
+      barcodeScanner = await scanbotSDK.createBarcodeScanner(config);
+      console.log('Barcode scanner created:', barcodeScanner);
 
     } catch (err) {
       console.error('Error while starting scanner:', err);
@@ -233,37 +242,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function onBarcodeDetected(result) {
-    console.log("Raw detection result:", result);
-    if (!result || result.length === 0) {
-      console.log('No barcodes in result:', result);
-      return;
-    }
-    if (scanCooldown) {
-      console.log('Scan cooldown, ignoring detection');
-      return;
-    }
+  async function onBarcodeDetected(barcodes) {
+    if (!barcodes || barcodes.length === 0) return;
+    if (scanCooldown) return;
 
     scanCooldown = true;
     setTimeout(() => (scanCooldown = false), 1000);
 
-    const barcode = result[0];
+    const barcode = barcodes[0];
     const code = (barcode.text || '').trim();
-    const format = barcode.format || barcode.symbology || '';
-
-    console.log('Detected barcode:', { code, format, raw: barcode });
+    const format = barcode.format || '';
 
     if (!code) {
       output.textContent = 'Empty barcode read, skipping.';
       scanNextBtn.disabled = false;
       return;
     }
-
-    // if (format === 'CODE_128' && !isLikelyGS1(code)) {
-    //   output.textContent = `Skipped non-GS1 CODE_128: ${code}`;
-    //   scanNextBtn.disabled = false;
-    //   return;
-    // }
 
     const entry = { code, format, count: 1 };
     scannedCodes.push(entry);
@@ -275,15 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanNextBtn.disabled = false;
     updateViewState();
 
-    // try {
-    //   if (barcodeScanner) {
-    //     await barcodeScanner.dispose();
-    //     barcodeScanner = null;
-    //   }
-    // } catch (e) {
-    //   console.warn('Error disposing scanner after detection:', e);
-    //   barcodeScanner = null;
-    // }
+    console.log('Barcode detected:', { code, format });
   }
 
   function addToTable(index, entry) {
