@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       barcodeScanner = await scanbotSDK.createBarcodeScanner({
-        container: '#video',
+        container: document.getElementById('video'),
         barcodeFormats: ['CODE_128', 'DATA_MATRIX'],
         onBarcodesDetected: (payload) => onBarcodeDetectedAdapter(payload),
         onDetected: (payload) => onBarcodeDetectedAdapter(payload),
