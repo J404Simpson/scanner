@@ -225,8 +225,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           finder: { color: 'rgba(0,255,0,0.3)' }
         },
       });
-
       console.log('Barcode scanner created:', barcodeScanner);
+
+      await barcodeScanner.startDetection();
+      console.log('Detection started:', barcodeScanner.detectionRunning);
+            
     } catch (err) {
       console.error('Error while starting scanner:', err);
       output.textContent = '❌ Unable to start scanner. See console for details.';
