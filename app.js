@@ -271,17 +271,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateViewState();
 
     console.log('Barcode detected:', { code, format });
-    
-    // Display barcode info on screen
-    output.innerHTML = `
-      <div style="margin-top:10px; padding:8px; background:#f0f8ff; border:1px solid #ccc; border-radius:6px;">
-        <strong>Barcode detected!</strong><br>
-        <b>Code:</b> ${code}<br>
-        <b>Format:</b> ${format}<br>
-        <b>Raw object:</b> ${JSON.stringify(barcodes[0], null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
-      </div>
-    `;
-    output.style.color = 'black';
   }
 
   function addToTable(index, entry) {
