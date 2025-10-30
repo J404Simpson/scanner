@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     scanNextBtn.disabled = false;
     updateViewState();
 
+    output.textContent = 'Barcode detected:', { code, format };
     console.log('Barcode detected:', { code, format });
   }
 
