@@ -48,6 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let confirmedWarehouseCode = null;
   let scanCooldown = false;
   let consignmentItems = [];
+  let ids = [];
+
 
   // Initialize Scanbot SDK
   async function initScanbot() {
@@ -124,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
           await fetchConsignmentItems(data.warehouseCode);
+          await fetchIds();
           populateConsignmentTable();
 
           accountSection.classList.add('hidden');
@@ -175,6 +178,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       itemTableBody.appendChild(row);
     });
+  }
+
+  async function fetchIds() {
+    try {
+      const res = await fetch('https://inventoryscannerapi-e5e2bfbhc2dkfsb6.germanywestcentral-01.azurewebsites.net/api/ids');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch /api/ids: ${res.status}`);
+      }
+
+      const data = await res.json();
+      ids = data.ids || []; // Store the ids globally
+      console.log('Fetched /api/ids:', ids);
+    } catch (err) {
+      console.error('Error fetching /api/ids:', err);
+      ids = [];
+    }
   }
 
   function updateViewState() {

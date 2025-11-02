@@ -5,6 +5,10 @@
   "dependencies": {
     "scanbot-web-sdk": "^7.2.0"
   },
-  "scripts": {
+  "scripts": {},
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "npm:@tailwindcss/cli@^4.1.14"
   }
 }
