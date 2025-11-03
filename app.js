@@ -301,9 +301,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const scannedLot = parsed.lot || '';
 
+    // Check item exists in consignment
     const existingRow = Array.from(itemTableBody.querySelectorAll('tr'))
       .find(row => row.cells[1]?.textContent.trim().toUpperCase() === scannedLot.trim().toUpperCase());
 
+    // If existing item add to count
     if (existingRow) {
       const countCell = existingRow.cells[4];
       countCell.textContent = Number(countCell.textContent) + 1;
@@ -313,11 +315,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         item.cr5bd_lotnumber &&
         item.cr5bd_lotnumber.trim().toUpperCase() === scannedLot.trim().toUpperCase()
       );
-      const quantity = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+      
+      let quantity = 0;
+      let matchedId = null;
+
+      // const quantity = matchedItem ? Number(matchedItem.cr5bd_quantity) : 0;
+
+      if (matchedItem) {
+        quantity = Number(matchedItem.cr5bd_quantity);
+      } else {
+        const code14 = entry.code.slice(2, 16);
+
+        matchedId = ids.find(id =>
+          id.cr5bd_name &&
+          id.cr5bd_name.trim() === code14
+        );
+
+        if (matchedId) {
+          console.log('Matched against IDs table:', matchedId);
+          output.textContent = `Matched product ID: ${matchedId.cr5bd_name}`;
+        } else {
+          console.warn('No match found in IDs list for code fragment:', code14);
+          output.textContent = `Unknown product (code: ${code14})`;
+        }
+      }
 
       const row = document.createElement('tr');
       row.innerHTML = `
         <td data-label="#">${itemTableBody.children.length + 1}</td>
+        <td data-label="SKU">${sku}</td>
+        <td data-label="Description">${description}</td>
         <td data-label="Lot Number">${scannedLot}</td>
         <td data-label="Expiry Date">${parsed.expiry || ''}</td>
         <td data-label="Quantity">${quantity}</td>
@@ -325,8 +352,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       itemTableBody.appendChild(row);
 
+      if (!matchedItem && matchedId) {
+        row.style.backgroundColor = '#e6ffed'; // light green background if matched from ids
+      } else if (!matchedItem && !matchedId) {
+        row.style.backgroundColor = '#ffe6e6'; // light red if unknown
+      }
+
       output.textContent = `Added new lot #${scannedLot}`;
     }
+
     output.style.color = 'green';
   }
 
