@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (matchedId) {
         sku = matchedId.cr5bd_sku || matchedId.cr5bd_name || '';
-        description = matchedId.cr5bd_description || '';
+        description = matchedId.cr5bd_productdescription || '';
         quantity = Number(matchedId.cr5bd_quantity) || 0;
         console.log('Matched against IDs table:', matchedId);
         output.textContent = `Matched product ID: ${sku}`;
@@ -361,13 +361,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       <td data-label="Count">1</td>
     `;
     itemTableBody.appendChild(row);
-
-    // Highlight rows based on match type
-    if (!matchedItem && matchedId) {
-      row.style.backgroundColor = '#e6ffed'; // light green if matched from IDs
-    } else if (!matchedItem && !matchedId) {
-      row.style.backgroundColor = '#ffe6e6'; // light red if unknown
-    }
 
     if (!existingRow) {
       output.textContent = `Added new lot #${scannedLot}`;
