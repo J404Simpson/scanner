@@ -448,10 +448,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const rows = Array.from(itemTableBody.querySelectorAll('tr'));
     const codes = rows.map(row => ({
+      SKU: row.querySelector('[data-label="SKU"]').textContent.trim(),
+      SKU: row.querySelector('[data-label="Description"]').textContent.trim(),
       lot: row.querySelector('[data-label="Lot Number"]').textContent.trim(),
-      expiry: row.querySelector('[data-label="Expiry Date"]').textContent.trim(),
-      count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0,
-      quantity: parseInt(row.querySelector('[data-label="Quantity"]').textContent.trim(), 10) || 0
+      expiry: row.querySelector('[data-label="Expiry"]').textContent.trim(),
+      quantity: parseInt(row.querySelector('[data-label="Quantity"]').textContent.trim(), 10) || 0,
+      count: parseInt(row.querySelector('[data-label="Count"]').textContent.trim(), 10) || 0
     }));
 
     if (codes.length === 0) {
