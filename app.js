@@ -172,8 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td data-label="#">${index + 1}</td>
+        <td data-label="SKU">${item.cr5bd_sku || ''}</td>
+        <td data-label="Description">${item.cr5bd_description || ''}</td>
         <td data-label="Lot Number">${item.cr5bd_lotnumber || ''}</td>
-        <td data-label="Expiry Date">${formatDate(item.cr5bd_expirydate)}</td>
+        <td data-label="Expiry">${formatDate(item.cr5bd_expirydate)}</td>
         <td data-label="Quantity">${item.cr5bd_quantity || 0}</td>
         <td data-label="Count">0</td>
       `;
