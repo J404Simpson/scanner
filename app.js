@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!res.ok) throw new Error(`Unable to fetch items: ${res.status}`);
     const data = await res.json();
     consignmentItems = itemsData.items || [];
+    console.log('Fetched /api/items:', ids);
   }
 
   function populateConsignmentTable() {
