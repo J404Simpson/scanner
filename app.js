@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <td data-label="SKU">${sku}</td>
       <td data-label="Description">${description}</td>
       <td data-label="Lot Number">${scannedLot}</td>
-      <td data-label="Expiry Date">${parsed.expiry || ''}</td>
+      <td data-label="Expiry">${parsed.expiry || ''}</td>
       <td data-label="Quantity">${quantity}</td>
       <td data-label="Count">1</td>
     `;
