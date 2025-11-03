@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
     if (!res.ok) throw new Error(`Unable to fetch items: ${res.status}`);
     const data = await res.json();
-    consignmentItems = Array.isArray(data) ? data : (data.items || []);
+    consignmentItems = itemsData.items || [];
   }
 
   function populateConsignmentTable() {
@@ -186,9 +186,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!res.ok) {
         throw new Error(`Failed to fetch /api/ids: ${res.status}`);
       }
-
       const data = await res.json();
-      ids = data.ids || []; // Store the ids globally
+      ids = data.ids || [];
       console.log('Fetched /api/ids:', ids);
     } catch (err) {
       console.error('Error fetching /api/ids:', err);
