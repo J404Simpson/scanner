@@ -19,21 +19,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const itemTableBody = document.querySelector('#itemTable tbody');
 
   const licenseKey =
-  "fS1e2s+IvkOlukoEWUQbnKK89hDDfW" +
-  "Jp/x1hDCB1mKDzf0CDjl+9/uSSNCsj" +
-  "C4hwaas4foFNvxvJKmFFpgkTbVzDrn" +
-  "XXhSRcsTSj4mC2F+2oJS9Y6oGG2muF" +
-  "L5R8j/Ofd1LYABfJkXqI+vp/RoUqzW" +
-  "GjaUVnRRyfnEoD1qg2UacEdLz8bGFo" +
-  "wNIBjWvwOu/KWMnnggSSmxDClvoRKL" +
-  "0QlTIDC3CYH/SG4/e1vNGH7uQem3pN" +
-  "HTSRKE3tD9ptadrXJ5SQN48F2cmZ9x" +
-  "pyjjK5BLZ310QP9kyMxHa0QTiRp0F3" +
-  "IdtaFQ3HBGdt+yDFxTA/BZt0vUCzfe" +
-  "57wDKjseB0mA==\nU2NhbmJvdFNESw" +
-  "psb2NhbGhvc3R8c2Nhbm5lci52ZXJ5" +
-  "YW5tZWQuY29tfHZlcnlhbm1lZC5jb2" +
-  "0KMTc2Mjk5MTk5OQo1MTIKOA==\n";
+  "oze+riwtsfpaOqdCCzdgCkYyjEFYPN" +
+  "L7C6JhRFE3WGAu8nc2c1v2hj2ga3Bi" +
+  "06C+zZBXYGH4g6eMjdYUC59Ghl7opc" +
+  "VD2O4bbx9EvmTvWv2CL55J28zO2JeL" +
+  "xichG6OBJql4xSU3nYGw679vs+FXUt" +
+  "P8+ILJryCkLvs4wXPPg/60NyOcZoDZ" +
+  "A7y8sw9ZieWXxNNkN8goSiN1TI6Jg3" +
+  "JY8PuiWIxxoMjS4nvQDRBGKcKnrUeb" +
+  "U2j2CCas4TQMGoDPZk8lwm7IOM2z7I" +
+  "jMjm/ITxSBq+MF+PHaqJCD2lP2up1c" +
+  "hqF0DcHXvnS+jSsdpeL+EZQ0U/d4Q0" +
+  "cGEcGL4Z6/1w==\nU2NhbmJvdFNESw" +
+  "pzY2FubmVyLnZlcnlhbm1lZC5jb218" +
+  "bG9jYWxob3N0CjE3OTkwMjA3OTkKNT" +
+  "EyCjg=\n";
 
   const scannedCodes = [];
   let scanbotSDK = null;
