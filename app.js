@@ -35,16 +35,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   "bG9jYWxob3N0CjE3OTkwMjA3OTkKNT" +
   "EyCjg=\n";
 
+  const today = new Date()
   const scannedCodes = [];
   let scanbotSDK = null;
   let barcodeScanner = null;
 
   let barcodeScannerController = null;
 
-  let currentDeviceId = null;
-  let lastScannedCode = null;
+  let formattedDate = today.toISOString().split('T')[0];
   let confirmedAccount = null;
   let confirmedAccountName = null;
+  let currentDeviceId = null;
+  let lastScannedCode = null;
   let confirmedWarehouseCode = null;
   let scanCooldown = false;
   let consignmentItems = [];
@@ -464,6 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.pendingSubmission = {
       account: confirmedAccount,
       accountName: confirmedAccountName,
+      date: formattedDate,
       codes
     };
 
