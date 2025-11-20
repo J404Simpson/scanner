@@ -466,6 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.pendingSubmission = {
       account: confirmedAccount,
       accountName: confirmedAccountName,
+      warehouseCode: confirmedWarehouseCode,
       date: formattedDate,
       codes
     };
